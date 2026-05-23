@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>论文预检查 · Fudan Paper Check</title>
+  <link rel="stylesheet" href="/static/styles.css" />
+</head>
+<body>
+  <div class="page">
+    <header class="header">
+      <div>
+        <p class="eyebrow">Fudan Paper Pre-Check</p>
+        <h1>论文预检查</h1>
+        <p class="subtitle">上传 PDF 或 Markdown，自动完成结构、格式、一致性与参考文献检查</p>
+      </div>
+      <div class="status-pill" id="apiStatus">检测服务…</div>
+    </header>
+
+    <main class="grid">
+      <section class="card upload-card">
+        <h2>上传论文</h2>
+        <form id="uploadForm">
+          <label class="field">
+            <span>主文件（PDF 或 maker.md）</span>
+            <input type="file" id="mainFile" name="file" accept=".pdf,.md,.markdown" required />
+          </label>
+
+          <label class="field">
+            <span>MinerU 文件（可选，用于表格融合）</span>
+            <input type="file" id="mineruFile" name="mineru_file" accept=".md,.markdown" />
+          </label>
+
+          <label class="field">
+            <span>期刊模板</span>
+            <select id="journalProfile" name="journal_profile">
+              <option value="scut_natural_science">华南理工大学学报（自然科学版）</option>
+              <option value="generic">通用中文学术论文</option>
+            </select>
+          </label>
+
+          <button type="submit" class="btn primary" id="submitBtn">开始检查</button>
+        </form>
+
+        <div class="hint">
+          <p>推荐：maker.md 作为主文本，mineru.md 作为表格补充源。</p>
+          <p>仅上传 PDF 时将走转换管道（需 Docker 或 mock 模式）。</p>
+        </div>
+      </section>
+
+      <section class="card progress-card">
+        <h2>任务进度</h2>
+        <div id="jobEmpty" class="empty">尚未提交任务</div>
+        <div id="jobPanel" class="hidden">
+          <dl class="meta-list">
+            <div><dt>任务 ID</dt><dd id="jobId">—</dd></div>
+            <div><dt>状态</dt><dd><span class="badge" id="jobStatus">—</span></dd></div>
+            <div><dt>期刊模板</dt><dd id="jobJournal">—</dd></div>
+            <div><dt>更新时间</dt><dd id="jobUpdated">—</dd></div>
+          </dl>
+          <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+          <p class="progress-text" id="progressText">等待中…</p>
+        </div>
+      </section>
+
+      <section class="card report-card">
+        <div class="report-header">
+          <h2>检查报告</h2>
+          <div class="report-actions hidden" id="reportActions">
+            <button class="btn ghost" id="copyJsonBtn">复制 JSON</button>
+            <button class="btn ghost" id="downloadMdBtn">下载 Markdown</button>
+          </div>
+        </div>
+
+        <div id="reportEmpty" class="empty">提交任务后，报告将显示在这里</div>
+
+        <div id="reportPanel" class="hidden">
+          <div class="summary-grid" id="summaryGrid"></div>
+          <div class="quality-box" id="qualityBox"></div>
+          <div class="issues-list" id="issuesList"></div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

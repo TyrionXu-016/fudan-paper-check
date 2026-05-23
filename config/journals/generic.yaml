@@ -1,0 +1,18 @@
+name: generic
+display_name: 通用中文学术论文
+required_sections:
+  - abstract
+  - references
+optional_sections:
+  - keywords
+  - english
+patterns:
+  doi: 'doi:\s*\S+'
+  classification: '中图分类号[:：]\s*\S+'
+  abstract_label: '摘\s*要[:：]'
+  keywords_label: '关键词[:：]'
+  table_caption: '^表\s*\d+'
+  figure_caption: '^图\s*\d+'
+  formula_number: '\(\d+\)'
+warnings:
+  ocr_space_in_number: '\d+\.\s+\d+'

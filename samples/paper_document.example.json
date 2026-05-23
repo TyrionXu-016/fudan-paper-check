@@ -1,0 +1,25 @@
+{
+  "meta": {
+    "title": "基于集成深度学习模型的公路隧道交通流预测",
+    "authors": ["钱超", "李俊", "李发强"],
+    "keywords": ["智能交通", "交通流预测", "深度学习"],
+    "abstract": "公路隧道交通流预测是合理优化隧道运营管控方案的重要技术基础..."
+  },
+  "sections": [
+    {
+      "id": "sec_abstract",
+      "kind": "abstract",
+      "title": "摘要",
+      "level": 1,
+      "start_line": 37,
+      "end_line": 37
+    }
+  ],
+  "quality": {
+    "maker_score": 0.92,
+    "mineru_score": 0.65,
+    "fusion_score": 0.88,
+    "fusion_warnings": [],
+    "degraded": false
+  }
+}

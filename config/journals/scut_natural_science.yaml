@@ -1,0 +1,18 @@
+name: scut_natural_science
+display_name: 华南理工大学学报（自然科学版）
+required_sections:
+  - abstract
+  - keywords
+  - references
+optional_sections:
+  - english
+patterns:
+  doi: 'doi:\s*[\d.]+\/[\w.\-]+'
+  classification: '中图分类号[:：]\s*\w+'
+  abstract_label: '摘\s*要[:：]'
+  keywords_label: '关键词[:：]'
+  table_caption: '^表\s*\d+'
+  figure_caption: '^图\s*\d+'
+  formula_number: '\(\d+\)'
+warnings:
+  ocr_space_in_number: '\d+\.\s+\d+'
