@@ -28,7 +28,7 @@ flowchart TB
   DocIndex --> A2[Agent-2 文本纠错]
   DocIndex --> A3[Agent-3 逻辑纠错]
   DocIndex --> A4[Agent-4 学术润色]
-  RAG1[RAG-1 规范检索] --> A1
+  RAG1[RAG-1 规则切片检索] --> A1
   A1 --> Merge[Issue 合并去重]
   A2 --> Merge
   A3 --> Merge
@@ -76,7 +76,9 @@ class AgentContext:
 | **SSE stage** | `FORMAT_CHECK`, `REFERENCE_CHECK` |
 | **Issue 类型** | `FORMAT`, `REFERENCE` |
 | **实现** | 迁移增强 `packages/checks/{structure,format,reference}.py` |
-| **RAG** | `rule_retriever.retrieve(rule_base_id, query, dimensions=["format","reference"])` |
+| **RAG** | `rule_retriever.retrieve(...)` 检索**规则切片**（非检测本身） |
+
+> **RAG-1 定位**：规范条文切片 + 检索引用，见 [rag-design.md §0](./rag-design.md)。违规判定由 checker/规则引擎完成，不由 RAG 做。
 
 ### 子任务拆解
 
@@ -227,6 +229,8 @@ stages:
 ---
 
 ## RAG-2：文档上下文检索
+
+> **与 RAG-1 区别**：RAG-1 = **规范规则切片**（静态）；RAG-2 = **当前论文 Span 上下文**（按 task 临时）。规范检查 Agent-1 主要消费 RAG-1；Agent-2/3/4 主要消费 RAG-2。
 
 | 项 | 内容 |
 |----|------|

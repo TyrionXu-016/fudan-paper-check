@@ -5,7 +5,7 @@
 | 文档 | 范围 | 实施优先级 |
 |------|------|------------|
 | [backend-api.md](./backend-api.md) | 后端 API、数据模型、SSE、决策、导出、RAG-1 MVP | **P0 — 已完成** |
-| [rag-design.md](./rag-design.md) | RAG-1 增强 + RAG-2 详细设计、任务 ID、验收 | **P1 — 待实施** |
+| [rag-design.md](./rag-design.md) | RAG-1 **规则切片** + RAG-2 论文上下文；任务 ID、验收 | **P1 — 待实施** |
 | [agent-implementation-guide.md](./agent-implementation-guide.md) | Agent 可分工交付指南、Prompt/Schema、集成点 | **P1 — 待实施** |
 | [agent-pipeline.md](./agent-pipeline.md) | Agent-1～5 架构总览、PRD 映射 | P1 — 参考总览 |
 | [model-finetuning.md](./model-finetuning.md) | SFT/LoRA FT-0～FT-7、ModelRouter | 与 Agent 并行 |

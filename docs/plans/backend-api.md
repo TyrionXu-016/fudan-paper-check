@@ -280,16 +280,20 @@ Body 示例：`{ "format": "docx"|"pdf", "decisions": [...] }`
 
 ## RAG-1：规范知识库（后端侧，支撑 rule_bases）
 
-> Agent 消费细节见 [agent-pipeline.md](./agent-pipeline.md)。后端 Phase 1 至少需要 **静态 summary**；RAG-1 为增强项。
+> 详细设计见 [rag-design.md](./rag-design.md)。Agent 消费见 [agent-pipeline.md](./agent-pipeline.md)。  
+> **定位**：**规则切片**（结构化条文索引），不是整本规范 PDF 的语义向量库。检测仍以 `packages/checks/` + YAML 为主。
 
 | 项 | 说明 |
 |----|------|
 | 目录 | `packages/rag/rule_index.py`, `rule_retriever.py` |
-| 输入 | `config/journals/*.yaml` + GB/T 7714 文档 |
-| 输出 | 向量索引；`retrieve_rules(rule_base_id, query, top_k)` |
+| 输入 | `config/journals/*.yaml` + `config/rules/*.md`（如 GB/T 7714） |
+| 切片策略 | 按 YAML 维度 / patterns / Markdown 小节 → `RuleChunk` |
+| 输出 | JSON 规则索引（MVP：BM25 + 子串匹配）；向量检索为 **P2 可选** |
+| API | `retrieve_rules(rule_base_id, query, top_k)`；`GET /v1/rule_bases/{id}/retrieve` |
 | CLI | `python -m rag.index_rules --rule-base scut_natural_science` |
 
-**与 API 关系**：`GET /v1/rule_bases/{id}` 的 `summary` 可来自 RAG 聚合或预计算缓存。
+**分工**：Checker **判定**违规；RAG-1 **检索条文**供 evidence、著录建议、Agent Prompt 引用。  
+**与 API 关系**：`GET /v1/rule_bases/{id}` 的 `summary` 为静态摘要；`/retrieve` 为按需规则切片检索。
 
 ---
 

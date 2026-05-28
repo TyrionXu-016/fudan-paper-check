@@ -119,7 +119,9 @@ class AgentContext:
 | A1-6 | 著录格式 [J]/[M] | 3.4.3 | REFERENCE + suggested 著录 |
 | A1-7 | 文献列表排序标点 | 3.4.4 | REFERENCE |
 
-### 4.2 RAG 用法
+### 4.2 RAG 用法（规则切片，非检测）
+
+RAG-1 **不负责判断**是否违规；只根据 query 召回相关条文，写入 `Issue.evidence` 或 LLM Prompt：
 
 ```python
 snippets = ctx.rule_retriever.retrieve(
@@ -127,7 +129,7 @@ snippets = ctx.rule_retriever.retrieve(
     dimensions=["reference"],
     top_k=3,
 )
-# 写入 Issue.evidence 或 LLM 补充说明（A1-6 著录改写可选小模型）
+# 违规与否仍由 StructureChecker / ReferenceChecker / FormatChecker 决定
 ```
 
 ### 4.3 验收

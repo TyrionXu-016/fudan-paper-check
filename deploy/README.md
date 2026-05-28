@@ -20,11 +20,27 @@
 
 ## HTTPS（DNS 生效后执行）
 
+**前提**：权威 DNS 能解析到服务器 IP：
+
+```bash
+dig @dns17.hichina.com pager-api.tyrion.space A
+# 应返回 114.55.139.240
+```
+
+在服务器上一键配置（已上传 `deploy/setup-https.sh`）：
+
 ```bash
 ssh root@114.55.139.240
-certbot certonly --nginx -d pager-api.tyrion.space
-# 然后按 deploy/nginx/pager-api.tyrion.space.conf 内注释启用 443 块
+/opt/fudan-pager-check/deploy/setup-https.sh
+```
+
+或手动：
+
+```bash
+certbot certonly --nginx -d pager-api.tyrion.space --non-interactive --agree-tos
+cp /opt/fudan-pager-check/deploy/nginx/pager-api.tyrion.space.conf /etc/nginx/conf.d/
 nginx -t && systemctl reload nginx
+curl https://pager-api.tyrion.space/health
 ```
 
 ## 常用运维命令
