@@ -1,5 +1,12 @@
 name: generic
 display_name: 通用中文学术论文
+summary:
+  format: 摘要、关键词、章节结构、图表与公式编号等通用格式要求
+  reference: 参考文献引用顺序编码与基本著录字段
+  typo: 错别字与拼写（Agent 检测）
+  grammar: 语病与冗余句式（Agent 检测）
+  polish: 学术语体润色建议（Agent 检测）
+  logic: 摘要与正文一致性（Agent 检测）
 required_sections:
   - abstract
   - references

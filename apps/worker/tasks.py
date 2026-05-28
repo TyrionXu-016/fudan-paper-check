@@ -5,9 +5,30 @@ import os
 from pathlib import Path
 
 from parser.fusion import DualSourceFusionParser
+from parser.span_builder import build_spans
+from orchestrator.issue_enricher import enrich_issues
 from orchestrator.runner import CheckOrchestrator, report_to_markdown
-from schema.models import JobRecord, JobStatus
+from orchestrator.progress import notify as progress_notify
+from schema.models import DetectStage, JobRecord, JobStatus
 from storage.jobs import STORAGE, UPLOADS, job_store, now_iso
+
+
+def _set_progress(
+    record: JobRecord,
+    *,
+    stage: DetectStage,
+    percent: int,
+    message: str,
+    status: JobStatus | None = None,
+) -> None:
+    record.current_stage = stage
+    record.progress_percent = percent
+    record.progress_message = message
+    if status is not None:
+        record.status = status
+    record.updated_at = now_iso()
+    job_store.save(record)
+    progress_notify(record.job_id, stage, percent, message)
 
 
 async def process_paper_job(
@@ -20,22 +41,51 @@ async def process_paper_job(
     record = job_store.get(job_id)
     if not record:
         record = JobRecord(job_id=job_id, status=JobStatus.QUEUED, created_at=now_iso())
-    record.status = JobStatus.PARSING
-    record.updated_at = now_iso()
-    job_store.save(record)
+    _set_progress(
+        record,
+        stage=DetectStage.PARSING,
+        percent=10,
+        message="正在解析文档",
+        status=JobStatus.PARSING,
+    )
 
     try:
         parser = DualSourceFusionParser()
         doc = parser.parse_files(maker_path, mineru_path)
-
-        record.status = JobStatus.CHECKING
-        record.updated_at = now_iso()
+        spans = build_spans(doc)
+        record.document = doc
+        record.spans = spans
         job_store.save(record)
 
-        orchestrator = CheckOrchestrator(journal_profile=journal_profile)
-        report = orchestrator.run(doc, job_id)
+        _set_progress(
+            record,
+            stage=DetectStage.FORMAT_CHECK,
+            percent=40,
+            message="正在执行检查",
+            status=JobStatus.CHECKING,
+        )
 
-        record.status = JobStatus.DONE
+        orchestrator = CheckOrchestrator(journal_profile=journal_profile)
+
+        def _on_progress(stage: DetectStage, percent: int, message: str) -> None:
+            _set_progress(
+                record,
+                stage=stage,
+                percent=percent,
+                message=message,
+                status=JobStatus.CHECKING,
+            )
+
+        report = orchestrator.run(doc, job_id, on_progress=_on_progress)
+        report.issues = enrich_issues(report.issues, doc, spans)
+
+        _set_progress(
+            record,
+            stage=DetectStage.DONE,
+            percent=100,
+            message=f"检测完成，共发现 {len(report.issues)} 项问题",
+            status=JobStatus.DONE,
+        )
         record.report = report
         record.updated_at = now_iso()
         job_store.save(record)
@@ -46,6 +96,8 @@ async def process_paper_job(
     except Exception as exc:
         record.status = JobStatus.FAILED
         record.error = str(exc)
+        record.current_stage = DetectStage.ERROR
+        record.progress_message = str(exc)
         record.updated_at = now_iso()
         job_store.save(record)
         raise
@@ -62,9 +114,13 @@ async def process_pdf_job(
     record = job_store.get(job_id)
     if not record:
         record = JobRecord(job_id=job_id, status=JobStatus.QUEUED, created_at=now_iso())
-    record.status = JobStatus.CONVERTING
-    record.updated_at = now_iso()
-    job_store.save(record)
+    _set_progress(
+        record,
+        stage=DetectStage.PARSING,
+        percent=5,
+        message="正在转换 PDF",
+        status=JobStatus.CONVERTING,
+    )
 
     out_dir = UPLOADS / job_id
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -81,7 +137,17 @@ async def process_pdf_job(
     )
 
 
+def _build_redis_settings():
+    from arq.connections import RedisSettings
+
+    redis_url = os.getenv("REDIS_URL", "redis://localhost:6379")
+    host_port = redis_url.split("://")[-1]
+    host = host_port.split(":")[0]
+    port = int(host_port.split(":")[-1] if ":" in host_port else 6379)
+    return RedisSettings(host=host, port=port)
+
+
 class WorkerSettings:
     functions = [process_paper_job, process_pdf_job]
-    redis_settings = os.getenv("REDIS_URL", "redis://localhost:6379")
+    redis_settings = _build_redis_settings()
     job_timeout = 600

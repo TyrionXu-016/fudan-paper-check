@@ -40,6 +40,30 @@ class CheckCategory(str, Enum):
     REFERENCE = "reference"
 
 
+class IssueType(str, Enum):
+    FORMAT = "format"
+    TYPO = "typo"
+    GRAMMAR = "grammar"
+    POLISH = "polish"
+    LOGIC_CONTRADICTION = "logic_contradiction"
+    PARAGRAPH_LOGIC = "paragraph_logic"
+    SENTENCE_SPLIT = "sentence_split"
+    REFERENCE = "reference"
+
+
+class DetectStage(str, Enum):
+    UPLOADING = "UPLOADING"
+    PARSING = "PARSING"
+    FORMAT_CHECK = "FORMAT_CHECK"
+    TYPO_CHECK = "TYPO_CHECK"
+    GRAMMAR_CHECK = "GRAMMAR_CHECK"
+    POLISH = "POLISH"
+    LOGIC_CHECK = "LOGIC_CHECK"
+    REFERENCE_CHECK = "REFERENCE_CHECK"
+    DONE = "DONE"
+    ERROR = "ERROR"
+
+
 class JobStatus(str, Enum):
     QUEUED = "queued"
     CONVERTING = "converting"
@@ -135,7 +159,29 @@ class PaperDocument(BaseModel):
     source_files: dict[str, str] = Field(default_factory=dict)
 
 
+class Span(BaseModel):
+    id: str
+    section_id: str
+    block_id: str
+    start_offset: int
+    end_offset: int
+    text: str
+    line_start: int | None = None
+    line_end: int | None = None
+
+
+class DocumentView(BaseModel):
+    sections: list[Section] = Field(default_factory=list)
+    spans: list[Span] = Field(default_factory=list)
+    paper_title: str = ""
+
+
 class Issue(BaseModel):
+    id: str = ""
+    issue_type: IssueType | None = None
+    original_text: str = ""
+    suggested_text: str = ""
+    span_id: str | None = None
     code: str
     category: CheckCategory
     severity: IssueSeverity
@@ -169,8 +215,100 @@ class JobRecord(BaseModel):
     filename: str | None = None
     error: str | None = None
     report: CheckReport | None = None
+    document: PaperDocument | None = None
+    spans: list[Span] = Field(default_factory=list)
+    current_stage: DetectStage | None = None
+    progress_percent: int = 0
+    progress_message: str = ""
     created_at: str = ""
     updated_at: str = ""
+
+
+class RuleBaseSummary(BaseModel):
+    format: str = ""
+    reference: str = ""
+    typo: str = ""
+    grammar: str = ""
+    polish: str = ""
+    logic: str = ""
+
+
+class RuleBaseListItem(BaseModel):
+    id: str
+    display_name: str
+    summary: RuleBaseSummary = Field(default_factory=RuleBaseSummary)
+
+
+class RuleBaseDetail(RuleBaseListItem):
+    required_sections: list[str] = Field(default_factory=list)
+    optional_sections: list[str] = Field(default_factory=list)
+
+
+class TaskStatusView(BaseModel):
+    task_id: str
+    status: JobStatus
+    rule_base_id: str
+    filename: str | None = None
+    error: str | None = None
+    current_stage: DetectStage | None = None
+    progress_percent: int = 0
+    progress_message: str = ""
+    created_at: str = ""
+    updated_at: str = ""
+
+
+class CheckSubmitResponse(BaseModel):
+    task_id: str
+    status: JobStatus
+
+
+class DecisionAction(str, Enum):
+    PENDING = "pending"
+    ACCEPT = "accept"
+    REJECT = "reject"
+    CUSTOM = "custom"
+
+
+class Decision(BaseModel):
+    issue_id: str
+    action: DecisionAction
+    custom_content: str | None = None
+    updated_at: str = ""
+
+
+class DecisionsPayload(BaseModel):
+    decisions: list[Decision] = Field(default_factory=list)
+
+
+class PreviewSpan(BaseModel):
+    span_id: str
+    section_id: str
+    text: str
+    highlight: str | None = None
+
+
+class PreviewView(BaseModel):
+    task_id: str
+    paper_title: str = ""
+    spans: list[PreviewSpan] = Field(default_factory=list)
+    unresolved_count: int = 0
+
+
+class ExportRequest(BaseModel):
+    format: str = "docx"
+    decisions: list[Decision] | None = None
+
+
+class ExportResponse(BaseModel):
+    unresolved_count: int
+    filename: str
+    format: str
+
+
+class ProgressEvent(BaseModel):
+    stage: DetectStage
+    percent: int
+    message: str
 
 
 class JobListItem(BaseModel):

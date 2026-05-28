@@ -3,6 +3,7 @@ from __future__ import annotations
 from schema.models import (
     CheckCategory,
     CheckReport,
+    DetectStage,
     Issue,
     IssueSeverity,
     PaperDocument,
@@ -12,6 +13,14 @@ from checks.consistency import ConsistencyChecker
 from checks.format import FormatChecker
 from checks.reference import ReferenceChecker
 from checks.structure import StructureChecker
+
+
+CHECK_STAGE_PROGRESS: dict[CheckCategory, tuple[DetectStage, int, str]] = {
+    CheckCategory.STRUCTURE: (DetectStage.FORMAT_CHECK, 35, "正在检查章节结构"),
+    CheckCategory.FORMAT: (DetectStage.FORMAT_CHECK, 50, "正在检查格式规范"),
+    CheckCategory.REFERENCE: (DetectStage.REFERENCE_CHECK, 75, "正在检查参考文献"),
+    CheckCategory.CONSISTENCY: (DetectStage.LOGIC_CHECK, 90, "正在检查内容与一致性"),
+}
 
 
 class CheckOrchestrator:
@@ -24,11 +33,19 @@ class CheckOrchestrator:
             ConsistencyChecker(llm_enabled=llm_enabled),
         ]
 
-    def run(self, doc: PaperDocument, job_id: str) -> CheckReport:
+    def run(
+        self,
+        doc: PaperDocument,
+        job_id: str,
+        on_progress=None,
+    ) -> CheckReport:
         all_issues: list[Issue] = []
         checks_run: list[CheckCategory] = []
 
         for checker in self.checkers:
+            if on_progress is not None:
+                stage, percent, message = CHECK_STAGE_PROGRESS[checker.category]
+                on_progress(stage, percent, message)
             if doc.quality.degraded and checker.category in {
                 CheckCategory.CONSISTENCY,
                 CheckCategory.REFERENCE,

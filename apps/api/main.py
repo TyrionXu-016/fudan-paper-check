@@ -9,11 +9,19 @@ from fastapi.staticfiles import StaticFiles
 from pathlib import Path
 
 from api.auth_routes import router as auth_router
+from api.exceptions import register_exception_handlers
+from api.routes.check import router as check_router
+from api.routes.decisions import router as decisions_router
+from api.routes.export import router as export_router
 from api.routes.papers import router as papers_router
+from api.routes.progress import router as progress_router
+from api.routes.result import router as result_router
+from api.routes.rule_bases import router as rule_bases_router
+from api.routes.tasks import router as tasks_router
 
 WEB_DIR = Path(__file__).resolve().parents[1] / "web"
 
-app = FastAPI(title="Fudan Paper Pre-Check API", version="0.2.0")
+app = FastAPI(title="Fudan Paper Pre-Check API", version="0.4.0")
 
 origins = os.getenv(
     "CORS_ORIGINS",
@@ -28,8 +36,17 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+register_exception_handlers(app)
+
 app.include_router(auth_router)
 app.include_router(papers_router)
+app.include_router(rule_bases_router)
+app.include_router(check_router)
+app.include_router(tasks_router)
+app.include_router(decisions_router)
+app.include_router(export_router)
+app.include_router(result_router)
+app.include_router(progress_router)
 
 if (WEB_DIR / "static").exists():
     app.mount("/static", StaticFiles(directory=WEB_DIR / "static"), name="static")
