@@ -6,7 +6,7 @@
 |--------|---------|----------|----------|------|--------|----------|------|
 | RAG-1 增强 | R1-1～R1-6 | 5 | 规则/后端 | RAG-1 MVP | | | 待认领 |
 | RAG-2 MVP | R2-1～R2-8 | 5 | Python | SpanBuilder | | | 待认领 |
-| Agent 基础 | base + llm + filters | 3 | Python | — | | | 待认领 |
+| Agent 基础 | base + llm + filters | 3 | Python | — | LeoSian | 2026-05-29 | 进行中 |
 | Agent-1 | A1-1～A1-7 | 8 | 规则 | RAG-1 | | | 待认领 |
 | Agent-2 | A2-1～A2-4 | 8 | LLM | RAG-2, 基础 | | | 待认领 |
 | Agent-3 | A3-1～A3-4 | 10 | 规则+LLM | RAG-2, 基础 | | | 待认领 |
