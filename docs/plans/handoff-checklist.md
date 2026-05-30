@@ -36,43 +36,43 @@
 
 ## Agent-1（包 C）
 
-- [ ] `AGENT_MODE=agents` 下 FORMAT/REFERENCE Issue 含 span_id
-- [ ] RAG-1 检索结果出现在 evidence 或日志（可配置 debug）
-- [ ] 样例论文回归无严重回归（issue 数 ±20% 内说明原因）
+- [x] `AGENT_MODE=agents` 下 FORMAT/REFERENCE Issue 含 span_id
+- [x] RAG-1 检索结果出现在 evidence 或日志（可配置 debug）
+- [x] 样例论文回归无严重回归（issue 数 ±20% 内说明原因）
 
 ---
 
 ## Agent-2（包 D）
 
-- [ ] SSE 出现 `TYPO_CHECK`、`GRAMMAR_CHECK`
-- [ ] LLM JSON 校验 + post_filter 单测
-- [ ] mock LLM E2E：故意错别字 → suggested_text 正确
-- [ ] 无 LLM key 时优雅跳过（0 issue + 日志）
+- [x] SSE 出现 `TYPO_CHECK`、`GRAMMAR_CHECK`
+- [x] LLM JSON 校验 + post_filter 单测
+- [x] mock LLM E2E：故意错别字 → suggested_text 正确
+- [x] 无 LLM key 时优雅跳过（0 issue + 日志）
 
 ---
 
 ## Agent-3（包 E）
 
-- [ ] 摘要数值不一致 → `logic_contradiction` + span_id
-- [ ] degraded 文档不调用 LLM
-- [ ] 图表编号 Issue 与现 checker 一致或更细
+- [x] 摘要数值不一致 → `logic_contradiction` + span_id
+- [x] degraded 文档不调用 LLM
+- [x] 图表编号 Issue 与现 checker 一致或更细
 
 ---
 
 ## Agent-4（包 F）
 
-- [ ] `POLISH_ENABLED=false` 跳过润色
-- [ ] 润色 Issue severity 默认 info
-- [ ] accept 后 preview 文本变化符合预期
+- [x] `POLISH_ENABLED=false` 跳过润色
+- [x] 润色 Issue severity 默认 info
+- [x] accept 后 preview 文本变化符合预期
 
 ---
 
 ## Agent-5 编排（包 G）
 
-- [ ] `AGENT_MODE=rules` 与现网行为一致（默认）
-- [ ] `AGENT_MODE=hybrid` merge 策略单测
-- [ ] 全 stage SSE E2E 通过
-- [ ] Docker 部署 worker 日志无未捕获异常
+- [x] `AGENT_MODE=rules` 与现网行为一致（默认）
+- [x] `AGENT_MODE=hybrid` merge 策略单测
+- [x] 全 stage SSE E2E 通过
+- [x] Docker 部署 worker 日志无未捕获异常
 
 ---
 
