@@ -202,11 +202,11 @@ IDLE → UPLOADING → DETECTING → DONE
 
 ### Phase 2 任务清单
 
-- [ ] `progress.py` + SSE 路由
-- [ ] `JobRecord` 增加 stage/percent/message
-- [ ] `fsm.py` + 非法状态拦截
-- [ ] Worker 接入 progress（先对现有 4 checker 映射 stage，Agent 接入后扩展）
-- [ ] 测试：SSE 事件序列、FSM 非法转换
+- [x] `progress.py` + SSE 路由
+- [x] `JobRecord` 增加 stage/percent/message
+- [x] `fsm.py` + 非法状态拦截
+- [x] Worker 接入 progress（先对现有 4 checker 映射 stage，Agent 接入后扩展）
+- [x] 测试：SSE 事件序列、FSM 非法转换
 
 ---
 
@@ -269,12 +269,12 @@ Body 示例：`{ "format": "docx"|"pdf", "decisions": [...] }`
 
 ### Phase 3 任务清单
 
-- [ ] decisions 存储 + CRUD 路由
-- [ ] preview 合成 + 路由
-- [ ] docx 导出（python-docx / pandoc）
-- [ ] pdf 导出（docx → LibreOffice / weasyprint）
+- [x] decisions 存储 + CRUD 路由
+- [x] preview 合成 + 路由
+- [x] docx 导出（python-docx / pandoc）
+- [x] pdf 导出（docx → LibreOffice / weasyprint）
 - [ ] 分片上传（可选）
-- [ ] 测试：决策 → preview 一致性 → 导出文件非空
+- [x] 测试：决策 → preview 一致性 → 导出文件非空
 
 ---
 
