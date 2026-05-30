@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass
+import os
 from typing import Protocol, Callable, Any
 
 from schema.models import PaperDocument, Span, Issue, DetectStage
@@ -9,7 +9,12 @@ from rag.rule_retriever import retrieve_rules, RuleSnippet
 
 
 class LLMClient:
+    def __init__(self):
+        self.api_key = os.getenv("LLM_API_KEY", "")
+
     def chat(self, messages: list[dict], *, json_mode: bool = True, timeout: float = 60) -> str:
+        if not self.api_key:
+            return "[]"  # 优雅跳过无 API Key 的情况
         # MVP Mock LLM Client
         return "[]"
 
