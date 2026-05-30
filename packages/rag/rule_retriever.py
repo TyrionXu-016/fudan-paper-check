@@ -70,7 +70,12 @@ def _bm25_score(query_tokens: list[str], doc_tokens: list[str], avg_dl: float, d
     return score
 
 
-def retrieve_rules(rule_base_id: str, query: str, top_k: int = 5) -> RetrieveRulesResponse:
+def retrieve_rules(
+    rule_base_id: str,
+    query: str,
+    top_k: int = 5,
+    dimensions: list[str] | None = None,
+) -> RetrieveRulesResponse:
     index = load_index(rule_base_id)
     if index is None:
         build_index(rule_base_id)
@@ -79,6 +84,9 @@ def retrieve_rules(rule_base_id: str, query: str, top_k: int = 5) -> RetrieveRul
         return RetrieveRulesResponse(rule_base_id=rule_base_id, query=query, results=[])
 
     chunks = index.get("chunks") or []
+    if dimensions:
+        chunks = [c for c in chunks if c.get("dimension") in dimensions]
+
     query_tokens = _tokenize(query)
     if not query_tokens:
         return RetrieveRulesResponse(rule_base_id=rule_base_id, query=query, results=[])

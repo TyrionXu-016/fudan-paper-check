@@ -7,10 +7,12 @@ from pathlib import Path
 from parser.fusion import DualSourceFusionParser
 from parser.span_builder import build_spans
 from orchestrator.issue_enricher import enrich_issues
-from orchestrator.runner import CheckOrchestrator, report_to_markdown
+from orchestrator.runner import report_to_markdown
+from orchestrator.agent_runner import AgentRunner
 from orchestrator.progress import notify as progress_notify
 from schema.models import DetectStage, JobRecord, JobStatus
 from storage.jobs import STORAGE, UPLOADS, job_store, now_iso
+from rag.doc_index import build_task_index, drop_task_index
 
 
 def _set_progress(
@@ -57,6 +59,9 @@ async def process_paper_job(
         record.spans = spans
         job_store.save(record)
 
+        # Build RAG-2 index
+        build_task_index(job_id, doc, spans)
+
         _set_progress(
             record,
             stage=DetectStage.FORMAT_CHECK,
@@ -65,7 +70,7 @@ async def process_paper_job(
             status=JobStatus.CHECKING,
         )
 
-        orchestrator = CheckOrchestrator(journal_profile=journal_profile)
+        runner = AgentRunner(journal_profile=journal_profile)
 
         def _on_progress(stage: DetectStage, percent: int, message: str) -> None:
             _set_progress(
@@ -76,7 +81,7 @@ async def process_paper_job(
                 status=JobStatus.CHECKING,
             )
 
-        report = orchestrator.run(doc, job_id, on_progress=_on_progress)
+        report = runner.run(doc, spans, job_id, on_progress=_on_progress)
         report.issues = enrich_issues(report.issues, doc, spans)
 
         _set_progress(
@@ -89,6 +94,9 @@ async def process_paper_job(
         record.report = report
         record.updated_at = now_iso()
         job_store.save(record)
+        
+        # Cleanup RAG-2 index
+        drop_task_index(job_id)
 
         md_path = STORAGE / f"{job_id}.report.md"
         md_path.write_text(report_to_markdown(report), encoding="utf-8")
