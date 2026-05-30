@@ -59,10 +59,53 @@ class RuleRetriever:
         return resp.results
 
 
+@dataclass
+class DocSnippet:
+    text: str
+
 class DocRetriever:
     def __init__(self, task_id: str):
         self.task_id = task_id
+        self._index_path = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 
+            "data", "rag", "tasks", f"{task_id}.json"
+        )
+        self._data = None
 
+    def _load(self):
+        if self._data is None:
+            if os.path.exists(self._index_path):
+                with open(self._index_path, "r", encoding="utf-8") as f:
+                    self._data = json.load(f)
+            else:
+                self._data = {"spans": [], "sections": []}
+
+    def retrieve(self, task_id: str, span_id: str, top_k: int = 5, include_section_summary: bool = False) -> list[DocSnippet]:
+        self._load()
+        spans = self._data.get("spans", [])
+        
+        target = next((s for s in spans if s["id"] == span_id), None)
+        if not target:
+            return []
+            
+        # Get target and its neighbors
+        neighbor_ids = set(target.get("neighbors", []))
+        neighbor_ids.add(span_id)
+        
+        # Keep original order if possible
+        result = []
+        for s in spans:
+            if s["id"] in neighbor_ids:
+                result.append(DocSnippet(text=s["text"]))
+                
+        # If include_section_summary, maybe append section context (mock for now)
+        if include_section_summary:
+            sec_id = target.get("section_id")
+            sec = next((s for s in self._data.get("sections", []) if s["id"] == sec_id), None)
+            if sec and sec.get("title"):
+                result.insert(0, DocSnippet(text=f"【章节：{sec['title']}】"))
+                
+        return result
 
 @dataclass
 class AgentContext:
