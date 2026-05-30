@@ -13,9 +13,9 @@ class LLMClient:
     def __init__(self):
         self.api_key = os.getenv("LLM_API_KEY", "")
 
-    def chat(self, messages: list[dict], *, json_mode: bool = True, timeout: float = 60, model: str | None = None) -> str:
+    def chat(self, messages: list[dict], *, json_mode: bool = True, timeout: float = 60, model: str | None = None, **kwargs) -> str:
         if not self.api_key:
-            return "[]"  # 优雅跳过无 API Key 的情况
+            return '{"issues": []}'  # 优雅跳过无 API Key 的情况
         
         import requests
         base_url = os.getenv("LLM_BASE_URL", "https://api.modelarts-maas.com/openai/v1")
@@ -38,12 +38,22 @@ class LLMClient:
             resp = requests.post(url, json=payload, headers=headers, timeout=timeout)
             resp.raise_for_status()
             data = resp.json()
-            return data["choices"][0]["message"]["content"]
+            content = data["choices"][0]["message"]["content"]
+            if json_mode:
+                content = content.strip()
+                if content.startswith("```json"):
+                    content = content[7:]
+                elif content.startswith("```"):
+                    content = content[3:]
+                if content.endswith("```"):
+                    content = content[:-3]
+                content = content.strip()
+            return content
         except Exception as e:
             print(f"LLM call failed: {e}")
             if "resp" in locals() and hasattr(resp, 'text'):
                 print(f"Response: {resp.text}")
-            return "[]"
+            return '{"issues": []}'
 
 
 class ModelRouter(LLMClient):
