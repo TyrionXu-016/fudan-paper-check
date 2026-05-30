@@ -26,10 +26,9 @@ class ModelRouter(LLMClient):
 
     def chat(self, messages: list[dict], *, json_mode: bool = True, timeout: float = 60, task_type: str = "") -> str:
         adapter = self.adapters.get(task_type, "")
+        model = self.base_model
         
         if self.ft_enabled and adapter:
-            # Here we would inject the adapter parameter to the actual LLM client call
-            # e.g. return super().chat(messages, model=adapter, ...)
-            pass
+            model = adapter
             
-        return super().chat(messages, json_mode=json_mode, timeout=timeout)
+        return super().chat(messages, json_mode=json_mode, timeout=timeout, model=model)
