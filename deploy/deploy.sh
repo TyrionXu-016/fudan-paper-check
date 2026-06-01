@@ -34,10 +34,18 @@ set -euo pipefail
 cd ${REMOTE_DIR}
 if [[ ! -f deploy/.env.prod ]]; then
   JWT=\$(openssl rand -hex 32)
+  INVITE=\$(openssl rand -hex 32)
   cat > deploy/.env.prod <<EOF
 JWT_SECRET=\${JWT}
+MSE_INVITE_SECRET=\${INVITE}
 CORS_ORIGINS=https://pager.tyrion.space,http://114.55.139.240,http://localhost:3000
-PDF_CONVERTER_MODE=mock
+APP_BASE_URL=https://pager.tyrion.space
+MSE_DATABASE_URL=sqlite:////app/data/mse.db
+PDF_CONVERTER_MODE=docker
+MSE_ALLOW_MOCK_FALLBACK=0
+MINERU_IMAGE=fudan-pager-mineru
+MAKER_IMAGE=fudan-pager-maker
+NOTIFIER=console
 EOF
   chmod 600 deploy/.env.prod
 fi

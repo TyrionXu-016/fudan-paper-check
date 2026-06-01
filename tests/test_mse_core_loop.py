@@ -24,6 +24,7 @@ def _fresh_db(tmp_path, monkeypatch):
     db_url = f"sqlite:///{tmp_path}/mse.db"
     users_file = tmp_path / "users.json"
     monkeypatch.setenv("MSE_DATABASE_URL", db_url)
+    monkeypatch.setenv("MSE_ALLOW_MOCK_FALLBACK", "1")
     monkeypatch.setattr("storage.users.USERS_FILE", users_file)
     from storage.db import reset_engine, init_db
 
@@ -89,6 +90,7 @@ def test_advisor_create_project_and_dashboard():
     project = res.json()
     assert project["advisor_id"]
     assert project["student_email"] == student_email
+    assert project["rule_base_ids"]
 
     dash = client.get("/v1/mse/dashboard", headers=headers)
     assert dash.status_code == 200
@@ -110,6 +112,7 @@ def test_student_create_project():
     assert body["student_id"]
     assert body["advisor_email"] == "adv2@test.com"
     assert body["initiator_role"] == "student"
+    assert body["rule_base_ids"]
 
 
 def test_auto_notify_false_pending_release():
@@ -129,8 +132,7 @@ def test_auto_notify_false_pending_release():
         headers=adv_headers,
     )
     project_id = res.json()["id"]
-
-    client.post(f"/v1/mse/projects/{project_id}/rules", headers=adv_headers)
+    assert res.json()["rule_base_ids"]
 
     accept = client.post(
         f"/v1/mse/projects/{project_id}/accept",

@@ -22,7 +22,18 @@ services:
       REDIS_URL: redis://redis:6379
       JWT_SECRET: ${JWT_SECRET}
       CORS_ORIGINS: ${CORS_ORIGINS:-*}
-      PDF_CONVERTER_MODE: ${PDF_CONVERTER_MODE:-mock}
+      MSE_DATABASE_URL: ${MSE_DATABASE_URL:-sqlite:////app/data/mse.db}
+      APP_BASE_URL: ${APP_BASE_URL:-http://localhost:3000}
+      PDF_CONVERTER_MODE: ${PDF_CONVERTER_MODE:-docker}
+      MSE_ALLOW_MOCK_FALLBACK: ${MSE_ALLOW_MOCK_FALLBACK:-0}
+      MINERU_IMAGE: ${MINERU_IMAGE:-mineru:latest}
+      MAKER_IMAGE: ${MAKER_IMAGE:-maker-pdf:latest}
+      MINERU_MAX_RETRIES: ${MINERU_MAX_RETRIES:-2}
+      NOTIFIER: ${NOTIFIER:-console}
+      LLM_PROVIDER: ${LLM_PROVIDER:-deepseek}
+      LLM_API_KEY: ${LLM_API_KEY:-}
+      LLM_BASE_URL: ${LLM_BASE_URL:-https://api.deepseek.com/v1}
+      MSE_INVITE_SECRET: ${MSE_INVITE_SECRET:-}
     volumes:
       - pager_data:/app/data
     depends_on:
@@ -40,9 +51,19 @@ services:
     environment:
       PYTHONPATH: /app/packages:/app/apps
       REDIS_URL: redis://redis:6379
-      PDF_CONVERTER_MODE: ${PDF_CONVERTER_MODE:-mock}
+      MSE_DATABASE_URL: ${MSE_DATABASE_URL:-sqlite:////app/data/mse.db}
+      PDF_CONVERTER_MODE: ${PDF_CONVERTER_MODE:-docker}
+      MSE_ALLOW_MOCK_FALLBACK: ${MSE_ALLOW_MOCK_FALLBACK:-0}
+      MINERU_IMAGE: ${MINERU_IMAGE:-mineru:latest}
+      MAKER_IMAGE: ${MAKER_IMAGE:-maker-pdf:latest}
+      MINERU_MAX_RETRIES: ${MINERU_MAX_RETRIES:-2}
+      LLM_PROVIDER: ${LLM_PROVIDER:-deepseek}
+      LLM_API_KEY: ${LLM_API_KEY:-}
+      LLM_BASE_URL: ${LLM_BASE_URL:-https://api.deepseek.com/v1}
+      NOTIFIER: ${NOTIFIER:-console}
     volumes:
       - pager_data:/app/data
+      - /var/run/docker.sock:/var/run/docker.sock
     depends_on:
       - redis
     networks:

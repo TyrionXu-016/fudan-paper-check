@@ -19,4 +19,4 @@ def test_build_project_index(tmp_path, monkeypatch):
     assert path.exists()
     data = load_project_index("proj-1")
     assert data is not None
-    assert data["chunk_count"] >= 1
+    assert data["chunk_count"] >= 15

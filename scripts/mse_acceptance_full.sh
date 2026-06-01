@@ -35,8 +35,6 @@ PID=$(curl -sf -X POST "$API/v1/mse/projects" \
   -d "{\"title\":\"全流程验收\",\"student_email\":\"$STU_EMAIL\",\"auto_notify_student\":true}" \
   | python3 -c "import sys,json; print(json.load(sys.stdin)['id'])")
 
-curl -sf -X POST "$API/v1/mse/projects/$PID/rules" -H "Authorization: Bearer $ADV_TOKEN" >/dev/null
-
 INV=$(curl -sf -X POST "$API/v1/mse/projects/$PID/invite" \
   -H "Authorization: Bearer $ADV_TOKEN" \
   -H "Content-Type: application/json" \
@@ -55,6 +53,30 @@ curl -sf -X POST "$API/v1/mse/invites/$ITOKEN/accept" \
   -H "Content-Type: application/json" \
   -d "{}" >/dev/null
 ok "POST /invites/{token}/accept"
+
+GUEST_EMAIL="guest-$(rand)@local.test"
+GPID=$(curl -sf -X POST "$API/v1/mse/projects" \
+  -H "Authorization: Bearer $ADV_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d "{\"title\":\"免登录验收\",\"student_email\":\"$GUEST_EMAIL\",\"auto_notify_student\":true}" \
+  | python3 -c "import sys,json; print(json.load(sys.stdin)['id'])")
+GINV=$(curl -sf -X POST "$API/v1/mse/projects/$GPID/invite" \
+  -H "Authorization: Bearer $ADV_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d "{\"send_email\":false}")
+GITOKEN=$(echo "$GINV" | python3 -c "import sys,json; print(json.load(sys.stdin)['token'])")
+SAMPLE_G=$(find "$ROOT/samples" -name '*_maker.md' 2>/dev/null | head -1)
+if [[ -n "$SAMPLE_G" ]]; then
+  GSUB=$(curl -sf -X POST "$API/v1/mse/invites/$GITOKEN/submissions" \
+    -F "file=@$SAMPLE_G;filename=paper.pdf;type=application/pdf")
+  if echo "$GSUB" | grep -q '"round_number"'; then
+    ok "POST /invites/{token}/submissions (免登录)"
+  else
+    bad "POST /invites/{token}/submissions"
+  fi
+else
+  ok "POST /invites/{token}/submissions (跳过：无样例)"
+fi
 
 ROUNDS=$(curl -sf "$API/v1/mse/projects/$PID/rounds" -H "Authorization: Bearer $ADV_TOKEN")
 if echo "$ROUNDS" | grep -q 'round_number'; then

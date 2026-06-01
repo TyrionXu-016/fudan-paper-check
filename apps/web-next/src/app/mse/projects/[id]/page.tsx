@@ -19,6 +19,7 @@ export default function MseProjectDetailPage() {
   const [rounds, setRounds] = useState<MseSubmissionRound[]>([]);
   const [fetching, setFetching] = useState(true);
   const [rulesLoading, setRulesLoading] = useState(false);
+  const [ruleFile, setRuleFile] = useState<File | null>(null);
   const [inviteLoading, setInviteLoading] = useState(false);
   const [inviteUrl, setInviteUrl] = useState("");
 
@@ -57,10 +58,22 @@ export default function MseProjectDetailPage() {
   }
 
   async function handleUploadRules() {
+    if (!token || !ruleFile) return;
+    setRulesLoading(true);
+    try {
+      const updated = await api.uploadMseRules(token, projectId, ruleFile);
+      setProject(updated);
+      setRuleFile(null);
+    } finally {
+      setRulesLoading(false);
+    }
+  }
+
+  async function handleIndexDefaultRules() {
     if (!token) return;
     setRulesLoading(true);
     try {
-      const updated = await api.uploadMseRules(token, projectId);
+      const updated = await api.uploadMseDefaultRules(token, projectId);
       setProject(updated);
     } finally {
       setRulesLoading(false);
@@ -101,6 +114,11 @@ export default function MseProjectDetailPage() {
               {project.advisor_email && `导师：${project.advisor_email}`}
               {project.student_email && ` · 学生：${project.student_email}`}
             </p>
+            {project.rule_base_ids.length > 0 && (
+              <p className="mt-2 text-xs text-teal-800">
+                已加载默认规范（含论文常见问题）
+              </p>
+            )}
           </div>
           <div className="flex flex-wrap gap-2">
             {isStudent && (
@@ -112,14 +130,33 @@ export default function MseProjectDetailPage() {
               </Link>
             )}
             {isAdvisor && (
-              <button
-                type="button"
-                onClick={handleUploadRules}
-                disabled={rulesLoading}
-                className="rounded-full border border-stone-300 px-5 py-2.5 text-sm text-stone-700 hover:bg-white disabled:opacity-50"
-              >
-                {rulesLoading ? "索引中…" : "绑定默认规范"}
-              </button>
+              <div className="flex flex-wrap items-center gap-2">
+                <label className="cursor-pointer rounded-full border border-stone-300 px-4 py-2.5 text-sm text-stone-700 hover:bg-white">
+                  {ruleFile ? ruleFile.name : "选择规范文件"}
+                  <input
+                    type="file"
+                    accept=".md,.docx,.pdf"
+                    className="hidden"
+                    onChange={(e) => setRuleFile(e.target.files?.[0] ?? null)}
+                  />
+                </label>
+                <button
+                  type="button"
+                  onClick={handleUploadRules}
+                  disabled={rulesLoading || !ruleFile}
+                  className="rounded-full bg-teal-700 px-5 py-2.5 text-sm text-white disabled:opacity-50"
+                >
+                  {rulesLoading ? "上传中…" : "上传规范文档"}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleIndexDefaultRules}
+                  disabled={rulesLoading}
+                  className="rounded-full border border-stone-300 px-4 py-2 text-xs text-stone-600 hover:bg-white disabled:opacity-50"
+                >
+                  重新索引默认规范
+                </button>
+              </div>
             )}
             {project.current_round > 0 && (
               <Link

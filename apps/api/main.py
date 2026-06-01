@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import api.env_loader  # noqa: F401 — load .env before other imports
+
 import os
 
 from fastapi import FastAPI

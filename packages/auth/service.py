@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import secrets
+import uuid
 from datetime import datetime, timedelta, timezone
 
 import jwt
@@ -10,7 +11,7 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from schema.models import JobRecord, UserPublic
 from storage.jobs import job_store
-from storage.users import JWT_ALGORITHM, JWT_EXPIRE_HOURS, JWT_SECRET, User, user_store
+from storage.users import JWT_ALGORITHM, JWT_EXPIRE_HOURS, JWT_SECRET, User, now_iso, user_store
 
 
 security = HTTPBearer(auto_error=False)
@@ -54,6 +55,25 @@ def decode_token(token: str) -> str:
 
 def to_public(user: User) -> UserPublic:
     return UserPublic(id=user.id, email=user.email, name=user.name, role=getattr(user, "role", "advisor"))
+
+
+def get_or_create_student(email: str) -> User:
+    """Provision a student account for invite-based first submission."""
+    existing = user_store.get_by_email(email)
+    if existing:
+        if getattr(existing, "role", "advisor") != "student":
+            raise HTTPException(status.HTTP_403_FORBIDDEN, "email registered with non-student role")
+        return existing
+    user = User(
+        id=str(uuid.uuid4()),
+        email=email.lower(),
+        name=email.split("@")[0],
+        password_hash=hash_password(secrets.token_urlsafe(32)),
+        role="student",
+        created_at=now_iso(),
+    )
+    user_store.save(user)
+    return user
 
 
 async def get_current_user(

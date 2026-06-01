@@ -10,7 +10,7 @@ COPY config config
 RUN pip install --no-cache-dir --default-timeout=120 \
     -i https://pypi.tuna.tsinghua.edu.cn/simple \
     pydantic pyyaml httpx fastapi "uvicorn[standard]" python-multipart arq redis \
-    eval_type_backport pyjwt python-docx reportlab
+    eval_type_backport pyjwt python-dotenv python-docx reportlab
 
 ENV PYTHONPATH=/app/packages:/app/apps
 

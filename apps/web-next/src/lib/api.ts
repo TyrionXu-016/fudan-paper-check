@@ -107,6 +107,14 @@ export const api = {
       {},
       token,
     ),
+  submitMsePaperViaInvite: (inviteToken: string, file: File) => {
+    const form = new FormData();
+    form.append("file", file);
+    return request<{ round_id: string; round_number: number; job_id: string }>(
+      `/v1/mse/invites/${encodeURIComponent(inviteToken)}/submissions`,
+      { method: "POST", body: form },
+    );
+  },
   submitMsePaper: (token: string, projectId: string, file: File) => {
     const form = new FormData();
     form.append("file", file);
@@ -140,9 +148,18 @@ export const api = {
       { method: "POST", body: JSON.stringify({}) },
       token,
     ),
-  uploadMseRules: (token: string, projectId: string) =>
-    request<import("./types").MseProject>(
+  uploadMseRules: (token: string, projectId: string, file: File) => {
+    const form = new FormData();
+    form.append("file", file);
+    return request<import("./types").MseProject>(
       `/v1/mse/projects/${projectId}/rules`,
+      { method: "POST", body: form },
+      token,
+    );
+  },
+  uploadMseDefaultRules: (token: string, projectId: string) =>
+    request<import("./types").MseProject>(
+      `/v1/mse/projects/${projectId}/rules/default`,
       { method: "POST", body: JSON.stringify({}) },
       token,
     ),

@@ -1,4 +1,7 @@
 data/
+.env
+scripts/mse_local.env
+deploy/.env.prod
 __pycache__/
 *.pyc
 .pytest_cache/

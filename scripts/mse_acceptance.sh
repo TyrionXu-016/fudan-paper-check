@@ -49,9 +49,12 @@ else
   bad "学生创建项目"
 fi
 
-# 5. Upload rules + bind student
-curl -sf -X POST "$API/v1/mse/projects/$PID/rules" -H "Authorization: Bearer $ADV_TOKEN" >/dev/null
-ok "上传规范文档"
+# 5. Default rules indexed on create + bind student
+if echo "$PROJ" | python3 -c "import sys,json; d=json.load(sys.stdin); exit(0 if d.get('rule_base_ids') else 1)"; then
+  ok "创建项目已自动索引默认规范"
+else
+  bad "创建项目默认规范索引"
+fi
 
 # Bind student via accept with invite
 INV=$(curl -sf -X POST "$API/v1/mse/projects/$PID/invite" \

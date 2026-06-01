@@ -14,9 +14,11 @@ from auth.mse import (
     assert_round_visible,
     get_repo,
     require_role,
+    resolve_invite_for_submit,
 )
-from auth.service import get_current_user, get_optional_user
+from auth.service import get_current_user, get_optional_user, get_or_create_student
 from mse.invite import generate_invite_token, invite_target_for_project
+from mse.rule_bootstrap import bootstrap_project_default_rules
 from mse.issue_diff import diff_rounds
 from mse.models import (
     AcceptInviteRequest,
@@ -91,17 +93,18 @@ async def create_project(body: CreateProjectRequest, user: User = Depends(get_cu
             student_email=body.student_email,
             auto_notify_student=body.auto_notify_student,
         )
-        return project
+        return bootstrap_project_default_rules(project.id, repo)
     if role == UserRole.STUDENT.value:
         if not body.advisor_email:
             raise HTTPException(400, "advisor_email required for student-initiated project")
         repo = get_repo()
-        return repo.create_project(
+        project = repo.create_project(
             title=body.title,
             initiator=user,
             advisor_email=body.advisor_email,
             auto_notify_student=body.auto_notify_student,
         )
+        return bootstrap_project_default_rules(project.id, repo)
     raise HTTPException(403, "invalid role")
 
 
@@ -124,6 +127,52 @@ async def get_project(project_id: str, user: User = Depends(get_current_user)):
 @router.post("/projects/{project_id}/rules", response_model=TutoringProject)
 async def upload_rules(
     project_id: str,
+    file: UploadFile = File(...),
+    user: User = Depends(get_current_user),
+):
+    from mse.rule_converter import MAX_RULE_BYTES, RULE_ALLOWED_SUFFIXES, convert_rule_to_markdown
+    from rag.mse_rule_index import load_project_index, project_sources_dir, rebuild_project_index_from_sources
+
+    require_role(user, UserRole.ADVISOR.value)
+    repo = get_repo()
+    project = repo.get_project(project_id)
+    if not project:
+        raise HTTPException(404, "project not found")
+    assert_project_advisor(project, user)
+
+    content = await file.read()
+    if len(content) > MAX_RULE_BYTES:
+        raise HTTPException(400, f"file too large (max {MAX_RULE_BYTES // (1024 * 1024)}MB)")
+    suffix = Path(file.filename or "").suffix.lower()
+    if suffix not in RULE_ALLOWED_SUFFIXES:
+        raise HTTPException(400, f"unsupported rule file type: {suffix}")
+
+    rule_id = f"rule-{uuid.uuid4().hex[:8]}"
+    sources_dir = project_sources_dir(project_id)
+    sources_dir.mkdir(parents=True, exist_ok=True)
+    orig_path = sources_dir / f"{rule_id}{suffix}"
+    orig_path.write_bytes(content)
+    md_path = sources_dir / f"{rule_id}.md"
+    try:
+        convert_rule_to_markdown(orig_path, md_path)
+    except (ValueError, RuntimeError) as exc:
+        orig_path.unlink(missing_ok=True)
+        md_path.unlink(missing_ok=True)
+        raise HTTPException(400, str(exc)) from exc
+
+    rebuild_project_index_from_sources(project_id)
+    index = load_project_index(project_id)
+    if not index or index.get("chunk_count", 0) == 0:
+        orig_path.unlink(missing_ok=True)
+        md_path.unlink(missing_ok=True)
+        raise HTTPException(400, "rule document produced no indexable content")
+
+    return repo.add_rule_document(project_id, rule_id)
+
+
+@router.post("/projects/{project_id}/rules/default", response_model=TutoringProject)
+async def index_default_rules(
+    project_id: str,
     user: User = Depends(get_current_user),
 ):
     require_role(user, UserRole.ADVISOR.value)
@@ -132,11 +181,12 @@ async def upload_rules(
     if not project:
         raise HTTPException(404, "project not found")
     assert_project_advisor(project, user)
-    rule_id = f"rule-{uuid.uuid4().hex[:8]}"
     from rag.mse_rule_index import build_project_index
 
-    build_project_index(project_id)
-    return repo.add_rule_document(project_id, rule_id)
+    build_project_index(project_id, include_default=True)
+    if project.rule_base_ids:
+        return project
+    return bootstrap_project_default_rules(project_id, repo)
 
 
 @router.post("/projects/{project_id}/invite")
@@ -259,20 +309,16 @@ async def accept_invite(
     return project
 
 
-@router.post("/projects/{project_id}/submissions")
-async def submit_paper(
+async def _create_submission(
     project_id: str,
-    file: UploadFile = File(...),
-    user: User | None = Depends(get_optional_user),
-):
+    file: UploadFile,
+    *,
+    user: User | None,
+) -> dict:
     repo = get_repo()
     project = repo.get_project(project_id)
     if not project:
         raise HTTPException(404, "project not found")
-    if user:
-        assert_project_student(project, user)
-    else:
-        raise HTTPException(401, "authentication required")
 
     from mse.fsm import can_submit
 
@@ -302,7 +348,53 @@ async def submit_paper(
 
     round_obj = repo.create_round(project_id, job_id)
     await _enqueue_mse_round(project_id, round_obj.id)
-    return {"round_id": round_obj.id, "round_number": round_obj.round_number, "job_id": job_id}
+    return {
+        "round_id": round_obj.id,
+        "round_number": round_obj.round_number,
+        "job_id": job_id,
+    }
+
+
+@router.post("/invites/{token}/submissions")
+async def submit_via_invite(token: str, file: UploadFile = File(...)):
+    repo = get_repo()
+    invite = resolve_invite_for_submit(repo, token)
+    project = repo.get_project(invite.project_id)
+    if not project:
+        raise HTTPException(404, "project not found")
+
+    student = get_or_create_student(invite.target_email)
+    if not project.student_id:
+        repo.bind_member(invite.project_id, student_id=student.id)
+        repo.mark_invite_used(token)
+        repo.log_activity(
+            invite.project_id,
+            student.id,
+            "invite_submit_bind",
+            f"{student.email} 通过邀请提交并绑定",
+        )
+    elif project.student_id != student.id:
+        raise HTTPException(403, "project already bound to another student")
+
+    return await _create_submission(invite.project_id, file, user=student)
+
+
+@router.post("/projects/{project_id}/submissions")
+async def submit_paper(
+    project_id: str,
+    file: UploadFile = File(...),
+    user: User | None = Depends(get_optional_user),
+):
+    if user:
+        repo = get_repo()
+        project = repo.get_project(project_id)
+        if not project:
+            raise HTTPException(404, "project not found")
+        assert_project_student(project, user)
+    else:
+        raise HTTPException(401, "authentication required")
+
+    return await _create_submission(project_id, file, user=user)
 
 
 @router.get("/projects/{project_id}/rounds", response_model=list[SubmissionRound])

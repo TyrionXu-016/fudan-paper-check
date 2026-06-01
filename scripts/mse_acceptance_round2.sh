@@ -22,7 +22,6 @@ PID=$(curl -sf -X POST "$API/v1/mse/projects" \
   -d "{\"title\":\"Diff验收\",\"student_email\":\"$STU_EMAIL\",\"auto_notify_student\":true}" \
   | python3 -c "import sys,json; print(json.load(sys.stdin)['id'])")
 
-curl -sf -X POST "$API/v1/mse/projects/$PID/rules" -H "Authorization: Bearer $ADV_TOKEN" >/dev/null
 INV=$(curl -sf -X POST "$API/v1/mse/projects/$PID/invite" \
   -H "Authorization: Bearer $ADV_TOKEN" -H "Content-Type: application/json" \
   -d "{\"send_email\":false}")

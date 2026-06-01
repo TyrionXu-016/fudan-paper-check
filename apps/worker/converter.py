@@ -6,6 +6,8 @@ import subprocess
 import time
 from pathlib import Path
 
+from mse.settings import allow_mock_fallback, use_docker_converter
+
 
 class PDFConverter:
     """Convert PDF via Maker and MinerU containers or local CLI fallback."""
@@ -13,7 +15,8 @@ class PDFConverter:
     def __init__(self) -> None:
         self.maker_image = os.getenv("MAKER_IMAGE", "maker-pdf:latest")
         self.mineru_image = os.getenv("MINERU_IMAGE", "mineru:latest")
-        self.use_docker = os.getenv("PDF_CONVERTER_MODE", "auto") != "mock"
+        self.use_docker = use_docker_converter()
+        self.allow_mock = allow_mock_fallback()
         self.max_retries = int(os.getenv("MINERU_MAX_RETRIES", "2"))
 
     def convert(self, pdf_path: Path, out_dir: Path) -> tuple[Path, Path | None]:
@@ -26,8 +29,15 @@ class PDFConverter:
             try:
                 if self.use_docker and shutil.which("docker"):
                     self._docker_convert(pdf_path, out_dir, maker_out, mineru_out)
-                else:
+                elif self.allow_mock:
                     self._mock_convert(pdf_path, maker_out, mineru_out)
+                else:
+                    raise RuntimeError(
+                        "PDF conversion requires docker (PDF_CONVERTER_MODE=docker) "
+                        "or MSE_ALLOW_MOCK_FALLBACK=1 for local dev"
+                    )
+                if not maker_out.exists():
+                    raise RuntimeError("PDF conversion produced no maker markdown")
                 mineru = mineru_out if mineru_out.exists() else None
                 return maker_out, mineru
             except Exception as exc:
@@ -67,16 +77,19 @@ class PDFConverter:
                 "/output/paper_mineru.md",
             ],
         ]
+        errors: list[str] = []
         for cmd in cmds:
             try:
                 subprocess.run(cmd, check=True, capture_output=True, text=True, timeout=300)
-            except (subprocess.CalledProcessError, FileNotFoundError, subprocess.TimeoutExpired):
-                if cmd[0] == "docker" and "maker" in cmd[-3]:
-                    self._mock_convert(pdf_path, maker_out, mineru_out)
-                break
+            except (subprocess.CalledProcessError, FileNotFoundError, subprocess.TimeoutExpired) as exc:
+                errors.append(str(exc))
 
         if not maker_out.exists():
-            self._mock_convert(pdf_path, maker_out, mineru_out)
+            if self.allow_mock:
+                self._mock_convert(pdf_path, maker_out, mineru_out)
+                return
+            detail = "; ".join(errors) if errors else "maker output missing"
+            raise RuntimeError(f"PDF docker conversion failed: {detail}")
 
     @staticmethod
     def _mock_convert(pdf_path: Path, maker_out: Path, mineru_out: Path) -> None:

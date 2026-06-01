@@ -99,6 +99,36 @@ curl -H "Authorization: Bearer $TOKEN" http://localhost:8000/v1/papers/{job_id}/
 docker compose up --build
 ```
 
+开发默认 `PDF_CONVERTER_MODE=mock`、`MSE_ALLOW_MOCK_FALLBACK=1`。启用 MinerU 严格模式：
+
+```bash
+export PDF_CONVERTER_MODE=docker
+export MSE_ALLOW_MOCK_FALLBACK=0
+export MINERU_IMAGE=fudan-pager-mineru
+export MAKER_IMAGE=fudan-pager-maker
+docker compose up --build api worker redis
+```
+
+Worker 需能访问 Docker（Compose 已挂载 `docker.sock`）。
+
+### MSE 论文辅导系统
+
+本地开发（inline worker + mock 解析）：
+
+```bash
+export JOB_RUN_INLINE=1
+export MSE_ALLOW_MOCK_FALLBACK=1
+export PYTHONPATH=packages:apps
+python3 -m uvicorn api.main:app --host 127.0.0.1 --port 8000 --app-dir apps
+
+cd apps/web-next && npm run dev
+```
+
+- 导师/学生入口：http://localhost:3000/mse/dashboard
+- 验收脚本：`./scripts/mse_acceptance.sh`（mock） / `./scripts/mse_acceptance_full.sh`（扩展）
+
+生产部署见 [`deploy/README.md`](deploy/README.md)。
+
 ### PDF 转换（Phase 2）
 
 设置环境变量启用 Docker 转换器：
@@ -107,6 +137,7 @@ docker compose up --build
 export MAKER_IMAGE=fudan-pager-maker
 export MINERU_IMAGE=fudan-pager-mineru
 export PDF_CONVERTER_MODE=docker
+export MSE_ALLOW_MOCK_FALLBACK=0
 ```
 
 构建 stub 镜像：

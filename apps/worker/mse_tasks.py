@@ -7,6 +7,7 @@ import uuid
 from pathlib import Path
 
 from mse.fsm import on_analysis_complete, on_release
+from mse.settings import allow_mock_fallback
 from mse.gate import evaluate_gate
 from mse.issue_diff import diff_rounds
 from mse.models import ProjectStatus, ReviewStatus
@@ -89,6 +90,10 @@ async def process_mse_round(ctx: dict, project_id: str, round_id: str) -> dict:
                     record.journal_profile or "generic",
                 )
             else:
+                if not allow_mock_fallback():
+                    raise FileNotFoundError(
+                        "no convertible upload found (strict mode: pdf/image/zip required)"
+                    )
                 from worker.tasks import process_paper_job
 
                 maker = UPLOADS / round_obj.job_id / "paper_maker.md"

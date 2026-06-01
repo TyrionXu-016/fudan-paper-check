@@ -51,7 +51,7 @@ def test_innovation_review_submit():
         headers=headers,
     )
     project_id = res.json()["id"]
-    client.post(f"/v1/mse/projects/{project_id}/rules", headers=headers)
+    client.post(f"/v1/mse/projects/{project_id}/rules/default", headers=headers)
 
     from auth.mse import get_repo
 
