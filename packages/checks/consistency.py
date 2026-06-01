@@ -3,9 +3,6 @@ from __future__ import annotations
 import json
 import os
 import re
-from typing import Any
-
-import httpx
 
 from checks.base import BaseChecker, section_text
 from schema.models import CheckCategory, Issue, IssueSeverity, PaperDocument
@@ -136,7 +133,14 @@ class ConsistencyChecker(BaseChecker):
             },
         }
         try:
-            data = self._call_llm(json.dumps(prompt, ensure_ascii=False))
+            from agents.llm_client import llm_client
+
+            data = llm_client.complete_json(
+                "你是论文预检查助手。仅返回 JSON，不要 markdown。"
+                "评估摘要是否覆盖问题/方法/数据/结果/结论，"
+                "并找出结论中可能缺少实验支撑的 claim。",
+                json.dumps(prompt, ensure_ascii=False),
+            )
         except Exception as exc:
             return [
                 Issue(
@@ -172,33 +176,3 @@ class ConsistencyChecker(BaseChecker):
             )
         return issues
 
-    def _call_llm(self, user_content: str) -> dict[str, Any]:
-        api_key = os.getenv("OPENAI_API_KEY") or os.getenv("LLM_API_KEY")
-        base_url = os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1")
-        model = os.getenv("LLM_MODEL", "gpt-4o-mini")
-        if not api_key:
-            raise RuntimeError("missing API key")
-
-        system = (
-            "你是论文预检查助手。仅返回 JSON，不要 markdown。"
-            "评估摘要是否覆盖问题/方法/数据/结果/结论，"
-            "并找出结论中可能缺少实验支撑的 claim。"
-        )
-        payload = {
-            "model": model,
-            "messages": [
-                {"role": "system", "content": system},
-                {"role": "user", "content": user_content},
-            ],
-            "response_format": {"type": "json_object"},
-            "temperature": 0,
-        }
-        with httpx.Client(timeout=60) as client:
-            resp = client.post(
-                f"{base_url.rstrip('/')}/chat/completions",
-                headers={"Authorization": f"Bearer {api_key}"},
-                json=payload,
-            )
-            resp.raise_for_status()
-            content = resp.json()["choices"][0]["message"]["content"]
-            return json.loads(content)

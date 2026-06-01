@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html><body>
+<h2>导师终审结果</h2>
+<p>项目「{{ project.title }}」创新性审查已完成。</p>
+<p><strong>结论：</strong>
+{% if review.advisor_decision == 'approve' %}通过
+{% elif review.advisor_decision == 'revise' %}需修改后重提
+{% elif review.advisor_decision == 'reject' %}不予通过
+{% else %}{{ review.advisor_decision }}{% endif %}
+</p>
+{% if review.advisor_comment %}
+<p><strong>导师评语：</strong>{{ review.advisor_comment }}</p>
+{% endif %}
+<p><a href="{{ project_url }}">查看项目</a></p>
+</body></html>

@@ -16,7 +16,8 @@
 
 后端 API、Agent 流水线、模型微调的分模块计划见 [`docs/plans/`](docs/plans/README.md)。
 
-- [后端 API 实施计划](docs/plans/backend-api.md)（当前优先）
+- [硕士学位论文辅导系统](docs/plans/mse-tutoring-system.md)（分支 `mse-tyrion`，当前优先）
+- [后端 API 实施计划](docs/plans/backend-api.md)（已完成）
 - [Agent 流水线计划](docs/plans/agent-pipeline.md)
 - [模型微调计划](docs/plans/model-finetuning.md)
 

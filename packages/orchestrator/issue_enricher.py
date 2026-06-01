@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import uuid
 
+from parser.page_mapper import PageMapper
 from schema.models import CheckCategory, Issue, IssueType, PaperDocument, Span
 
 
@@ -35,6 +36,8 @@ def enrich_issues(
     issues: list[Issue],
     doc: PaperDocument,
     spans: list[Span],
+    *,
+    page_mapper: PageMapper | None = None,
 ) -> list[Issue]:
     enriched: list[Issue] = []
     for issue in issues:
@@ -50,6 +53,14 @@ def enrich_issues(
             data["span_id"] = span.id
             if not data.get("original_text"):
                 data["original_text"] = span.text
+            if not data.get("page") and span.page is not None:
+                data["page"] = span.page
+        if page_mapper and not data.get("page") and data.get("line"):
+            data["page"] = page_mapper.page_for_line(data["line"])
+        if page_mapper and data.get("page") and not data.get("page_line"):
+            data["page_line"] = page_mapper.page_line_label(
+                data["page"], data.get("line")
+            )
         if not data.get("original_text") and issue.evidence:
             data["original_text"] = issue.evidence[:500]
         if not data.get("suggested_text") and issue.suggestion:

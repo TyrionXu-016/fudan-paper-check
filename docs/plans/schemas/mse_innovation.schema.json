@@ -1,0 +1,14 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "MseInnovationResponse",
+  "type": "object",
+  "required": ["llm_summary", "novelty_score", "comparison_notes"],
+  "properties": {
+    "llm_summary": { "type": "string", "minLength": 50 },
+    "novelty_score": { "type": "number", "minimum": 0, "maximum": 1 },
+    "comparison_notes": { "type": "string" },
+    "strengths": { "type": "array", "items": { "type": "string" } },
+    "weaknesses": { "type": "array", "items": { "type": "string" } },
+    "suggested_questions_for_advisor": { "type": "array", "items": { "type": "string" } }
+  }
+}

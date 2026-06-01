@@ -1,0 +1,33 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "MseLlmIssues",
+  "type": "object",
+  "required": ["issues"],
+  "properties": {
+    "issues": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["code", "category", "severity", "message"],
+        "properties": {
+          "code": { "type": "string" },
+          "category": {
+            "type": "string",
+            "enum": ["structure", "format", "reference", "consistency"]
+          },
+          "severity": {
+            "type": "string",
+            "enum": ["error", "warning", "info"]
+          },
+          "message": { "type": "string" },
+          "original_text": { "type": "string" },
+          "suggested_text": { "type": "string" },
+          "revision_hint": { "type": "string" },
+          "rule_ref": { "type": "string" },
+          "page": { "type": "integer", "minimum": 1 },
+          "line": { "type": "integer", "minimum": 1 }
+        }
+      }
+    }
+  }
+}

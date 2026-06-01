@@ -49,6 +49,7 @@ class IssueType(str, Enum):
     PARAGRAPH_LOGIC = "paragraph_logic"
     SENTENCE_SPLIT = "sentence_split"
     REFERENCE = "reference"
+    LLM = "llm"
 
 
 class DetectStage(str, Enum):
@@ -121,6 +122,8 @@ class FigureRef(BaseModel):
     caption: str = ""
     path: str | None = None
     line: int | None = None
+    page: int | None = None
+    section_id: str | None = None
 
 
 class Reference(BaseModel):
@@ -168,6 +171,7 @@ class Span(BaseModel):
     text: str
     line_start: int | None = None
     line_end: int | None = None
+    page: int | None = None
 
 
 class DocumentView(BaseModel):
@@ -187,6 +191,10 @@ class Issue(BaseModel):
     severity: IssueSeverity
     section: str | None = None
     line: int | None = None
+    page: int | None = None
+    page_line: str | None = None
+    rule_ref: str | None = None
+    revision_hint: str = ""
     message: str
     suggestion: str = ""
     evidence: str = ""
@@ -331,6 +339,7 @@ class UserPublic(BaseModel):
     id: str
     email: str
     name: str = ""
+    role: str = "advisor"
 
 
 class TokenResponse(BaseModel):
@@ -343,6 +352,7 @@ class RegisterRequest(BaseModel):
     email: str
     password: str = Field(min_length=6)
     name: str = ""
+    role: str = "advisor"
 
 
 class LoginRequest(BaseModel):

@@ -35,9 +35,9 @@ def verify_password(password: str, password_hash: str) -> bool:
     return secrets.compare_digest(check.hex(), digest)
 
 
-def create_access_token(user_id: str) -> str:
+def create_access_token(user_id: str, role: str = "advisor") -> str:
     expire = datetime.now(timezone.utc) + timedelta(hours=JWT_EXPIRE_HOURS)
-    payload = {"sub": user_id, "exp": expire}
+    payload = {"sub": user_id, "role": role, "exp": expire}
     return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
 
 
@@ -53,7 +53,7 @@ def decode_token(token: str) -> str:
 
 
 def to_public(user: User) -> UserPublic:
-    return UserPublic(id=user.id, email=user.email, name=user.name)
+    return UserPublic(id=user.id, email=user.email, name=user.name, role=getattr(user, "role", "advisor"))
 
 
 async def get_current_user(

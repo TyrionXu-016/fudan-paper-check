@@ -21,10 +21,11 @@ async def register(body: RegisterRequest):
         email=body.email,
         name=body.name or body.email.split("@")[0],
         password_hash=hash_password(body.password),
+        role=body.role if body.role in ("advisor", "student") else "advisor",
         created_at=now_iso(),
     )
     user_store.save(user)
-    token = create_access_token(user.id)
+    token = create_access_token(user.id, user.role)
     return TokenResponse(access_token=token, user=to_public(user))
 
 
@@ -33,7 +34,7 @@ async def login(body: LoginRequest):
     user = user_store.get_by_email(body.email)
     if not user or not verify_password(body.password, user.password_hash):
         raise HTTPException(401, "invalid email or password")
-    token = create_access_token(user.id)
+    token = create_access_token(user.id, getattr(user, "role", "advisor"))
     return TokenResponse(access_token=token, user=to_public(user))
 
 

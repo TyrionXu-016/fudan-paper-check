@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 import shutil
 import subprocess
+import time
 from pathlib import Path
 
 
@@ -13,19 +14,27 @@ class PDFConverter:
         self.maker_image = os.getenv("MAKER_IMAGE", "maker-pdf:latest")
         self.mineru_image = os.getenv("MINERU_IMAGE", "mineru:latest")
         self.use_docker = os.getenv("PDF_CONVERTER_MODE", "auto") != "mock"
+        self.max_retries = int(os.getenv("MINERU_MAX_RETRIES", "2"))
 
     def convert(self, pdf_path: Path, out_dir: Path) -> tuple[Path, Path | None]:
         out_dir.mkdir(parents=True, exist_ok=True)
         maker_out = out_dir / "paper_maker.md"
         mineru_out = out_dir / "paper_mineru.md"
 
-        if self.use_docker and shutil.which("docker"):
-            self._docker_convert(pdf_path, out_dir, maker_out, mineru_out)
-        else:
-            self._mock_convert(pdf_path, maker_out, mineru_out)
-
-        mineru = mineru_out if mineru_out.exists() else None
-        return maker_out, mineru
+        last_error: Exception | None = None
+        for attempt in range(self.max_retries + 1):
+            try:
+                if self.use_docker and shutil.which("docker"):
+                    self._docker_convert(pdf_path, out_dir, maker_out, mineru_out)
+                else:
+                    self._mock_convert(pdf_path, maker_out, mineru_out)
+                mineru = mineru_out if mineru_out.exists() else None
+                return maker_out, mineru
+            except Exception as exc:
+                last_error = exc
+                if attempt < self.max_retries:
+                    time.sleep(2**attempt)
+        raise last_error or RuntimeError("PDF conversion failed")
 
     def _docker_convert(
         self, pdf_path: Path, out_dir: Path, maker_out: Path, mineru_out: Path

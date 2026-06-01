@@ -37,10 +37,10 @@ export const api = {
       "/v1/auth/login",
       { method: "POST", body: JSON.stringify({ email, password }) },
     ),
-  register: (email: string, password: string, name: string) =>
+  register: (email: string, password: string, name: string, role?: string) =>
     request<{ access_token: string; user: import("./types").User }>(
       "/v1/auth/register",
-      { method: "POST", body: JSON.stringify({ email, password, name }) },
+      { method: "POST", body: JSON.stringify({ email, password, name, role: role ?? "advisor" }) },
     ),
   me: (token: string) =>
     request<import("./types").User>("/v1/auth/me", {}, token),
@@ -75,4 +75,126 @@ export const api = {
     );
   },
   reportMarkdownUrl: (jobId: string) => `${API_BASE}/v1/papers/${jobId}/report.md`,
+  mseDashboard: (token: string) =>
+    request<import("./types").MseDashboardResponse>("/v1/mse/dashboard", {}, token),
+  createMseProject: (
+    token: string,
+    body: {
+      title: string;
+      student_email?: string;
+      advisor_email?: string;
+      auto_notify_student?: boolean;
+    },
+  ) =>
+    request<import("./types").MseProject>(
+      "/v1/mse/projects",
+      { method: "POST", body: JSON.stringify(body) },
+      token,
+    ),
+  listMseProjects: (token: string) =>
+    request<import("./types").MseProject[]>("/v1/mse/projects", {}, token),
+  getMseProject: (token: string, projectId: string) =>
+    request<import("./types").MseProject>(`/v1/mse/projects/${projectId}`, {}, token),
+  listMseRounds: (token: string, projectId: string) =>
+    request<import("./types").MseSubmissionRound[]>(
+      `/v1/mse/projects/${projectId}/rounds`,
+      {},
+      token,
+    ),
+  getMseRoundReport: (token: string, projectId: string, roundNumber: number) =>
+    request<import("./types").MseRoundReport>(
+      `/v1/mse/projects/${projectId}/rounds/${roundNumber}/report`,
+      {},
+      token,
+    ),
+  submitMsePaper: (token: string, projectId: string, file: File) => {
+    const form = new FormData();
+    form.append("file", file);
+    return request<{ round_id: string; round_number: number; job_id: string }>(
+      `/v1/mse/projects/${projectId}/submissions`,
+      { method: "POST", body: form },
+      token,
+    );
+  },
+  releaseMseRound: (token: string, projectId: string, roundNumber: number) =>
+    request<import("./types").MseRoundReport>(
+      `/v1/mse/projects/${projectId}/rounds/${roundNumber}/release`,
+      { method: "POST", body: JSON.stringify({}) },
+      token,
+    ),
+  dismissMseIssue: (
+    token: string,
+    projectId: string,
+    roundNumber: number,
+    fingerprint: string,
+    reason?: string,
+  ) =>
+    request<{ status: string }>(
+      `/v1/mse/projects/${projectId}/rounds/${roundNumber}/issues/${encodeURIComponent(fingerprint)}/dismiss`,
+      { method: "POST", body: JSON.stringify({ reason: reason ?? "" }) },
+      token,
+    ),
+  retryMseRound: (token: string, projectId: string, roundNumber: number) =>
+    request<{ status: string; round_id: string }>(
+      `/v1/mse/projects/${projectId}/rounds/${roundNumber}/retry`,
+      { method: "POST", body: JSON.stringify({}) },
+      token,
+    ),
+  uploadMseRules: (token: string, projectId: string) =>
+    request<import("./types").MseProject>(
+      `/v1/mse/projects/${projectId}/rules`,
+      { method: "POST", body: JSON.stringify({}) },
+      token,
+    ),
+  getInnovationReview: (token: string, projectId: string) =>
+    request<import("./types").InnovationReview>(
+      `/v1/mse/projects/${projectId}/innovation-review`,
+      {},
+      token,
+    ),
+  submitInnovationReview: (
+    token: string,
+    projectId: string,
+    body: { advisor_comment: string; advisor_decision: "approve" | "revise" | "reject" },
+  ) =>
+    request<import("./types").InnovationReview>(
+      `/v1/mse/projects/${projectId}/innovation-review`,
+      { method: "POST", body: JSON.stringify(body) },
+      token,
+    ),
+  getInviteInfo: (inviteToken: string) =>
+    request<import("./types").InviteInfo>(`/v1/mse/invites/${encodeURIComponent(inviteToken)}`),
+  acceptInvite: (token: string, inviteToken: string) =>
+    request<import("./types").MseProject>(
+      `/v1/mse/invites/${encodeURIComponent(inviteToken)}/accept`,
+      { method: "POST", body: JSON.stringify({}) },
+      token,
+    ),
+  inviteMember: (token: string, projectId: string, email?: string) =>
+    request<{ invite_url: string; token: string }>(
+      `/v1/mse/projects/${projectId}/invite`,
+      { method: "POST", body: JSON.stringify({ email, send_email: false }) },
+      token,
+    ),
+  downloadMseRoundExport: async (
+    token: string,
+    projectId: string,
+    roundNumber: number,
+    format: "md" | "pdf",
+  ) => {
+    const res = await fetch(
+      `${API_BASE}/v1/mse/projects/${projectId}/rounds/${roundNumber}/export.${format}`,
+      { headers: { Authorization: `Bearer ${token}` } },
+    );
+    if (!res.ok) {
+      throw new ApiError(res.status, await res.text());
+    }
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `round-${roundNumber}.${format}`;
+    a.click();
+    URL.revokeObjectURL(url);
+  },
 };

@@ -217,11 +217,18 @@ def _parse_citations(lines: list[str], sections: list[Section]) -> list[Citation
 
 def _parse_figures(lines: list[str]) -> list[FigureRef]:
     figures: list[FigureRef] = []
+    page_re = re.compile(r"_page_(\d+)_", re.I)
     for i, line in enumerate(lines, start=1):
         img = re.match(r"^!\[\]\((.+)\)$", line.strip())
         cap = re.match(r"^图\s*(\d+)\s*(.*)$", line.strip())
+        page = None
         if img:
-            figures.append(FigureRef(id=f"fig_line_{i}", path=img.group(1), line=i))
+            m = page_re.search(img.group(1))
+            if m:
+                page = int(m.group(1)) + 1
+            figures.append(
+                FigureRef(id=f"fig_line_{i}", path=img.group(1), line=i, page=page)
+            )
         elif cap:
             figures.append(
                 FigureRef(
@@ -229,6 +236,7 @@ def _parse_figures(lines: list[str]) -> list[FigureRef]:
                     number=int(cap.group(1)),
                     caption=cap.group(2).strip(),
                     line=i,
+                    page=page,
                 )
             )
     return figures

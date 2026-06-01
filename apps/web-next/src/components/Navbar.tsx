@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth";
 
 const links = [
+  { href: "/mse/dashboard", label: "论文辅导" },
   { href: "/dashboard", label: "历史任务" },
   { href: "/upload", label: "上传检查" },
 ];

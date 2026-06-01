@@ -1,0 +1,16 @@
+# MSE 论文辅导测试集（计算机硕士，MVP）
+version: 1
+discipline: computer_science
+tiers:
+  - id: tier-a-primary
+    tier: A
+    primary: true
+    subfield: traffic_prediction
+    note: 使用仓库 samples/钱超_maker.md 作为 fallback
+    maker_fallback: samples/基于集成深度学习模型的公路隧道交通流预测_钱超_maker.md
+    mineru_fallback: samples/基于集成深度学习模型的公路隧道交通流预测_钱超_mineru.md
+  - id: tier-b-placeholder
+    tier: B
+    primary: false
+    subfield: nlp
+    note: 待补充本地 PDF 至 theses/

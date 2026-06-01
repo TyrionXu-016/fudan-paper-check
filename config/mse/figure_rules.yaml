@@ -1,0 +1,5 @@
+require_caption: true
+require_body_reference: true
+caption_pattern: "^图\\s*\\d+"
+reference_pattern: "图\\s*\\d+"
+sequential_numbers: true

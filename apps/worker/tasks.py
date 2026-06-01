@@ -147,7 +147,15 @@ def _build_redis_settings():
     return RedisSettings(host=host, port=port)
 
 
+from worker.mse_tasks import process_mse_round, retry_mse_round_parse
+
+
 class WorkerSettings:
-    functions = [process_paper_job, process_pdf_job]
+    functions = [
+        process_paper_job,
+        process_pdf_job,
+        process_mse_round,
+        retry_mse_round_parse,
+    ]
     redis_settings = _build_redis_settings()
     job_timeout = 600

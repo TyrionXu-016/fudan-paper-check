@@ -10,6 +10,7 @@ from pathlib import Path
 
 from api.auth_routes import router as auth_router
 from api.exceptions import register_exception_handlers
+from api.routes.mse import router as mse_router
 from api.routes.check import router as check_router
 from api.routes.decisions import router as decisions_router
 from api.routes.export import router as export_router
@@ -38,6 +39,7 @@ app.add_middleware(
 
 register_exception_handlers(app)
 
+app.include_router(mse_router)
 app.include_router(auth_router)
 app.include_router(papers_router)
 app.include_router(rule_bases_router)
@@ -50,6 +52,13 @@ app.include_router(progress_router)
 
 if (WEB_DIR / "static").exists():
     app.mount("/static", StaticFiles(directory=WEB_DIR / "static"), name="static")
+
+
+@app.on_event("startup")
+async def startup():
+    from storage.db import init_db
+
+    init_db()
 
 
 @app.get("/health")

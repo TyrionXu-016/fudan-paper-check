@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html><body>
+<h2>第 {{ round_number }} 轮审查意见</h2>
+<p>项目：{{ project.title }}</p>
+{% if diff %}
+<p>本轮新发现 {{ diff.new|length }} 项 · 已修复 {{ diff.fixed|length }} 项 · 仍待修改 {{ diff.persistent|length }} 项</p>
+{% endif %}
+<table border="1" cellpadding="6">
+<tr><th>页码</th><th>章节</th><th>问题</th><th>建议</th></tr>
+{% for issue in issues %}
+<tr>
+  <td>{{ issue.page or issue.line or '-' }}</td>
+  <td>{{ issue.section or '-' }}</td>
+  <td>{{ issue.message }}</td>
+  <td>{{ issue.revision_hint or issue.suggestion }}</td>
+</tr>
+{% endfor %}
+</table>
+<p><a href="{{ report_url }}">查看完整报告</a></p>
+</body></html>

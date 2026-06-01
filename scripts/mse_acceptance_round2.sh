@@ -1,0 +1,61 @@
+#!/usr/bin/env bash
+# 第 2 轮提交 + diff 验收
+set -euo pipefail
+API="${API_BASE:-http://127.0.0.1:8000}"
+
+rand() { python3 -c "import uuid; print(uuid.uuid4().hex[:8])"; }
+
+ADV_EMAIL="adv-$(rand)@local.test"
+STU_EMAIL="stu-$(rand)@local.test"
+
+echo "=== Round 2 + Diff 验收 ==="
+
+ADV_TOKEN=$(curl -sf -X POST "$API/v1/auth/register" -H "Content-Type: application/json" \
+  -d "{\"email\":\"$ADV_EMAIL\",\"password\":\"secret12\",\"name\":\"Adv\",\"role\":\"advisor\"}" \
+  | python3 -c "import sys,json; print(json.load(sys.stdin)['access_token'])")
+STU_TOKEN=$(curl -sf -X POST "$API/v1/auth/register" -H "Content-Type: application/json" \
+  -d "{\"email\":\"$STU_EMAIL\",\"password\":\"secret12\",\"name\":\"Stu\",\"role\":\"student\"}" \
+  | python3 -c "import sys,json; print(json.load(sys.stdin)['access_token'])")
+
+PID=$(curl -sf -X POST "$API/v1/mse/projects" \
+  -H "Authorization: Bearer $ADV_TOKEN" -H "Content-Type: application/json" \
+  -d "{\"title\":\"Diff验收\",\"student_email\":\"$STU_EMAIL\",\"auto_notify_student\":true}" \
+  | python3 -c "import sys,json; print(json.load(sys.stdin)['id'])")
+
+curl -sf -X POST "$API/v1/mse/projects/$PID/rules" -H "Authorization: Bearer $ADV_TOKEN" >/dev/null
+INV=$(curl -sf -X POST "$API/v1/mse/projects/$PID/invite" \
+  -H "Authorization: Bearer $ADV_TOKEN" -H "Content-Type: application/json" \
+  -d "{\"send_email\":false}")
+TOK=$(echo "$INV" | python3 -c "import sys,json; print(json.load(sys.stdin)['token'])")
+curl -sf -X POST "$API/v1/mse/projects/$PID/accept" \
+  -H "Authorization: Bearer $STU_TOKEN" -H "Content-Type: application/json" \
+  -d "{\"token\":\"$TOK\"}" >/dev/null
+
+SAMPLE=$(find "$(dirname "$0")/../samples" -name '*_maker.md' | head -1)
+for round in 1 2; do
+  curl -sf -X POST "$API/v1/mse/projects/$PID/submissions" \
+    -H "Authorization: Bearer $STU_TOKEN" \
+    -F "file=@$SAMPLE;filename=paper.pdf;type=application/pdf" >/dev/null
+  sleep 3
+  echo "  完成第 ${round} 轮提交"
+done
+
+DIFF=$(curl -sf "$API/v1/mse/projects/$PID/rounds/2/diff?base=1" \
+  -H "Authorization: Bearer $ADV_TOKEN")
+echo "$DIFF" | python3 -c "
+import json, sys
+d = json.load(sys.stdin)
+print(f\"  diff: fixed={len(d.get('fixed',[]))} new={len(d.get('new',[]))} persistent={len(d.get('persistent',[]))}\")
+assert d.get('base_round') == 1 and d.get('current_round') == 2
+print('  OK GET .../rounds/2/diff?base=1')
+"
+
+DASH=$(curl -sf "$API/v1/mse/dashboard" -H "Authorization: Bearer $ADV_TOKEN")
+echo "$DASH" | python3 -c "
+import json, sys
+d = json.load(sys.stdin)
+s = d['advisor']['stats']
+print(f\"  OK dashboard projects={s['total_projects']} active={s['active']}\")
+"
+
+echo "=== Round 2 + Diff 验收通过 ==="

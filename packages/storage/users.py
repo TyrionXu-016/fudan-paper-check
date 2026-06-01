@@ -19,6 +19,7 @@ class User(BaseModel):
     email: str
     name: str = ""
     password_hash: str
+    role: str = "advisor"
     created_at: str = ""
 
 
@@ -39,7 +40,11 @@ class UserStore:
         if not USERS_FILE.exists():
             return
         raw = json.loads(USERS_FILE.read_text(encoding="utf-8"))
-        self.users = {uid: User.model_validate(item) for uid, item in raw.items()}
+        self.users = {}
+        for uid, item in raw.items():
+            if "role" not in item:
+                item["role"] = "advisor"
+            self.users[uid] = User.model_validate(item)
 
     def save(self, user: User) -> None:
         self.users[user.id] = user

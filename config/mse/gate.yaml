@@ -1,0 +1,5 @@
+max_errors: 0
+max_warnings: 5
+required_sections:
+  - abstract
+  - references
