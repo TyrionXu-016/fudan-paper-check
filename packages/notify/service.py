@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import os
 from pathlib import Path
 
@@ -9,6 +10,8 @@ from mse.models import InnovationReview, RoundIssueDiff, TutoringProject
 from notify.base import Notifier
 from notify.console import ConsoleNotifier
 from schema.models import Issue
+
+logger = logging.getLogger(__name__)
 
 
 def _default_notifier() -> Notifier:
@@ -35,6 +38,14 @@ class NotificationService:
         self.notifier = notifier or _default_notifier()
         self.app_base = os.getenv("APP_BASE_URL", "http://localhost:3000")
 
+    async def _safe_send(self, to_email: str, subject: str, html: str) -> bool:
+        try:
+            await self.notifier.send(to_email, subject, html)
+            return True
+        except Exception as exc:
+            logger.warning("email to %s failed: %s", to_email, exc)
+            return False
+
     async def send_student_issues(
         self,
         to_email: str,
@@ -52,7 +63,7 @@ class NotificationService:
             diff=diff,
             report_url=f"{self.app_base}/mse/projects/{project.id}/rounds/{round_number}",
         )
-        await self.notifier.send(to_email, subject, html)
+        await self._safe_send(to_email, subject, html)
 
     async def send_advisor_preview_ready(
         self,
@@ -67,7 +78,7 @@ class NotificationService:
             round_number=round_number,
             release_url=f"{self.app_base}/mse/projects/{project.id}/rounds/{round_number}",
         )
-        await self.notifier.send(to_email, subject, html)
+        await self._safe_send(to_email, subject, html)
 
     async def send_advisor_ready(
         self,
@@ -82,7 +93,7 @@ class NotificationService:
             round_number=round_number,
             review_url=f"{self.app_base}/mse/projects/{project.id}/review",
         )
-        await self.notifier.send(to_email, subject, html)
+        await self._safe_send(to_email, subject, html)
 
     async def send_parse_failed(
         self,
@@ -97,7 +108,7 @@ class NotificationService:
             round_number=round_number,
             retry_url=f"{self.app_base}/mse/projects/{project.id}/submit",
         )
-        await self.notifier.send(to_email, subject, html)
+        await self._safe_send(to_email, subject, html)
 
     async def send_analysis_failed(
         self,
@@ -114,21 +125,21 @@ class NotificationService:
             error=error,
             retry_url=f"{self.app_base}/mse/projects/{project.id}/submit",
         )
-        await self.notifier.send(to_email, subject, html)
+        await self._safe_send(to_email, subject, html)
 
     async def send_invite_student(
         self, to_email: str, project: TutoringProject, invite_url: str
     ) -> None:
         subject = f"[论文辅导] 邀请参与 — {project.title}"
         html = _render("invite_student.html", project=project, invite_url=invite_url)
-        await self.notifier.send(to_email, subject, html)
+        await self._safe_send(to_email, subject, html)
 
     async def send_invite_advisor(
         self, to_email: str, project: TutoringProject, invite_url: str
     ) -> None:
         subject = f"[论文辅导] 学生邀请您辅导 — {project.title}"
         html = _render("invite_advisor.html", project=project, invite_url=invite_url)
-        await self.notifier.send(to_email, subject, html)
+        await self._safe_send(to_email, subject, html)
 
     async def send_student_innovation_decision(
         self,
@@ -145,7 +156,7 @@ class NotificationService:
             review=review,
             project_url=f"{self.app_base}/mse/projects/{project.id}",
         )
-        await self.notifier.send(to_email, subject, html)
+        await self._safe_send(to_email, subject, html)
 
 
 notification_service = NotificationService()

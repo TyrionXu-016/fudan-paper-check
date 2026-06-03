@@ -99,6 +99,13 @@ curl -H "Authorization: Bearer $TOKEN" http://localhost:8000/v1/papers/{job_id}/
 docker compose up --build
 ```
 
+真实论文 PDF 样例（开放获取 arXiv，约 11MB）：
+
+```bash
+./scripts/download_real_pdf_samples.sh
+# 见 samples/real_pdfs/README.md
+```
+
 开发默认 `PDF_CONVERTER_MODE=mock`、`MSE_ALLOW_MOCK_FALLBACK=1`。启用 MinerU 严格模式：
 
 ```bash

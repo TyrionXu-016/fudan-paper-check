@@ -29,7 +29,10 @@ done
 
 PDF="${MINERU_TEST_PDF:-}"
 if [[ -z "$PDF" ]]; then
-  PDF=$(find "$ROOT/samples" -name '*.pdf' 2>/dev/null | head -1 || true)
+  PDF="$ROOT/samples/real_pdfs/arxiv_attention_is_all_you_need.pdf"
+fi
+if [[ ! -f "$PDF" ]]; then
+  PDF=$(find "$ROOT/samples/real_pdfs" "$ROOT/samples" -name '*.pdf' 2>/dev/null | head -1 || true)
 fi
 
 if [[ -z "$PDF" || ! -f "$PDF" ]]; then
@@ -69,15 +72,31 @@ SUB=$(curl -sf -X POST "$API/v1/mse/projects/$PID/submissions" \
   -H "Authorization: Bearer $STU_TOKEN" \
   -F "file=@$PDF;filename=thesis.pdf;type=application/pdf")
 ROUND=$(echo "$SUB" | python3 -c "import sys,json; print(json.load(sys.stdin)['round_number'])")
-sleep 10
-STATUS=$(curl -sf "$API/v1/mse/projects/$PID/rounds/$ROUND/report" \
-  -H "Authorization: Bearer $ADV_TOKEN" \
-  | python3 -c "import sys,json; print(json.load(sys.stdin)['review_status'])")
-echo "  轮次 $ROUND 状态: $STATUS"
+echo "  已提交真实 PDF，等待解析+分析（最多 180s）..."
+STATUS=""
+for i in $(seq 1 36); do
+  sleep 5
+  STATUS=$(curl -sf "$API/v1/mse/projects/$PID/rounds/$ROUND/report" \
+    -H "Authorization: Bearer $ADV_TOKEN" \
+    | python3 -c "import sys,json; print(json.load(sys.stdin, strict=False).get('review_status',''))" 2>/dev/null || echo "")
+  echo "  [$i] $STATUS"
+  case "$STATUS" in
+    parsing|analyzing|pending|"") ;;
+    *)
+      break
+      ;;
+  esac
+done
+echo "  轮次 $ROUND 最终状态: $STATUS"
 if [[ "$STATUS" == "parse_failed" ]]; then
-  echo "  ✓ 严格模式：解析失败未 silently mock（或 MinerU 失败属预期）"
-elif [[ "$STATUS" != "parsing" && "$STATUS" != "analyzing" && "$STATUS" != "pending" ]]; then
-  echo "  ✓ MinerU 解析完成: $STATUS"
+  echo "  ✓ 严格模式：解析失败未 silently mock"
+  exit 1
+elif [[ "$STATUS" == "analysis_failed" ]]; then
+  echo "  ✗ 分析失败"
+  exit 1
+elif [[ "$STATUS" == "parsing" || "$STATUS" == "analyzing" || "$STATUS" == "pending" ]]; then
+  echo "  ✗ 超时仍在处理"
+  exit 1
 else
-  echo "  … 仍在处理，请稍后查看报告"
+  echo "  ✓ MinerU + 分析流程完成: $STATUS"
 fi

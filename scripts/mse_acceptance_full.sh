@@ -117,7 +117,7 @@ if [[ -n "$SAMPLE" ]]; then
 
   GATE=$(python3 -c "
 import json
-r=json.load(open('/tmp/mse_full_rep.json'))
+r=json.load(open('/tmp/mse_full_rep.json'), strict=False)
 print('1' if (r.get('gate') or {}).get('passed') else '0')
 ")
   if [[ "$GATE" == "1" ]]; then

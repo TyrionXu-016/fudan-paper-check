@@ -36,12 +36,27 @@ class SmtpNotifier:
         msg.attach(MIMEText(plain, "plain", "utf-8"))
         msg.attach(MIMEText(html_body, "html", "utf-8"))
 
-        with smtplib.SMTP(self.host, self.port, timeout=30) as smtp:
-            if self.use_tls:
+        use_ssl = self.port == 465 or os.getenv("SMTP_USE_SSL", "").lower() in (
+            "1",
+            "true",
+            "yes",
+        )
+        if use_ssl:
+            smtp: smtplib.SMTP = smtplib.SMTP_SSL(self.host, self.port, timeout=30)
+        else:
+            smtp = smtplib.SMTP(self.host, self.port, timeout=30)
+
+        try:
+            if not use_ssl and self.use_tls:
                 smtp.starttls()
             if self.user and self.password:
                 smtp.login(self.user, self.password)
             smtp.sendmail(self.from_addr, [to_email], msg.as_string())
+        finally:
+            try:
+                smtp.quit()
+            except Exception:
+                pass
 
     async def send(
         self,

@@ -1,4 +1,5 @@
 data/
+samples/real_pdfs/*.pdf
 .env
 scripts/mse_local.env
 deploy/.env.prod

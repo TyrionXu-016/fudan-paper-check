@@ -98,7 +98,7 @@ else
     "$API/v1/mse/projects/$PID/rounds/$ROUND/report" \
     -H "Authorization: Bearer $STU_TOKEN")
 
-  STATUS=$(python3 -c "import json; print(json.load(open('/tmp/mse_rep_a.json'))['review_status'])" 2>/dev/null || echo "unknown")
+  STATUS=$(python3 -c "import json; print(json.load(open('/tmp/mse_rep_a.json'), strict=False)['review_status'])" 2>/dev/null || echo "unknown")
   if [[ "$REP_A" == "200" ]]; then ok "导师可读报告 (status=$STATUS)"; else bad "导师可读报告"; fi
 
   if [[ "$STATUS" == "pending_release" && "$REP_S" == "403" ]]; then
@@ -121,7 +121,7 @@ else
   # Issue fields
   if python3 -c "
 import json
-r=json.load(open('/tmp/mse_rep_a.json'))
+r=json.load(open('/tmp/mse_rep_a.json'), strict=False)
 issues=(r.get('report') or {}).get('issues') or []
 print(len(issues))
 " 2>/dev/null | grep -qv '^0$'; then

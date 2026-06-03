@@ -52,19 +52,19 @@ echo "等待 LLM 分析 (最多 120s)..."
 for i in $(seq 1 24); do
   sleep 5
   REP=$(curl -sf "$API/v1/mse/projects/$PID/rounds/1/report" -H "Authorization: Bearer $ADV_TOKEN")
-  STATUS=$(echo "$REP" | python3 -c "import sys,json; print(json.load(sys.stdin).get('review_status',''))")
+  STATUS=$(echo "$REP" | python3 -c "import sys,json; print(json.load(sys.stdin, strict=False).get('review_status',''))")
   if [[ "$STATUS" != "analyzing" && "$STATUS" != "parsing" && "$STATUS" != "pending" ]]; then
     echo "  轮次状态: $STATUS"
     echo "$REP" | python3 -c "
 import sys,json
-r=json.load(sys.stdin)
+r=json.load(sys.stdin, strict=False)
 issues=(r.get('report') or {}).get('issues') or []
 llm=sum(1 for i in issues if getattr(i.get('issue_type'),'str',i.get('issue_type'))=='llm' or i.get('issue_type')=='llm')
 print(f'  Issue 总数={len(issues)} llm类型={llm}')
 gate=r.get('gate') or {}
 print(f'  门禁 passed={gate.get(\"passed\")}')
 "
-    GATE=$(echo "$REP" | python3 -c "import sys,json; print((json.load(sys.stdin).get('gate') or {}).get('passed'))")
+    GATE=$(echo "$REP" | python3 -c "import sys,json; print((json.load(sys.stdin, strict=False).get('gate') or {}).get('passed'))")
     if [[ "$GATE" == "True" ]]; then
       curl -sf "$API/v1/mse/projects/$PID/innovation-review" -H "Authorization: Bearer $ADV_TOKEN" | python3 -c "
 import sys,json
