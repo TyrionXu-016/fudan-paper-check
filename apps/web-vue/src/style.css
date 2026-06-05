@@ -866,6 +866,32 @@ input, textarea, select { font-family: inherit; }
   border-top: 1px solid var(--border); padding-top: 8px; margin-top: 18px; }
 .doc-body { outline: none; min-height: 320px; }
 .doc-body:focus { outline: none; }
+
+/* ===== 登录态 ===== */
+.auth-chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  height: 28px; padding: 0 10px;
+  border-radius: 999px;
+  background: var(--green-50);
+  color: var(--green-700);
+  font-size: 12px;
+}
+.auth-chip .auth-link {
+  background: none; border: none; color: var(--ink-4); font-size: 12px;
+  cursor: pointer; padding: 0 0 0 6px;
+  border-left: 1px solid var(--border); margin-left: 4px;
+}
+.auth-chip .auth-link:hover { color: var(--ink-1); }
+.auth-field { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--ink-3); }
+.auth-field input {
+  height: 36px; padding: 0 12px;
+  border: 1px solid var(--border); border-radius: 8px;
+  background: var(--bg-sunken); color: var(--ink-1); font-size: 14px;
+}
+.auth-field input:focus {
+  outline: 2px solid var(--cyan-bright-50);
+  border-color: var(--cyan-bright-3); background: var(--surface);
+}
 .legend {
   display: flex; gap: 14px;
   margin-left: auto;

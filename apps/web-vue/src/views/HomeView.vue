@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import AppIcon from '../components/AppIcon.vue'
 import UploadCard from '../components/left/UploadCard.vue'
 import RuleSelector from '../components/left/RuleSelector.vue'
@@ -13,6 +13,7 @@ import RulePreviewDialog from '../components/dialogs/RulePreviewDialog.vue'
 import CompareDialog from '../components/dialogs/CompareDialog.vue'
 import ShortcutHelpDialog from '../components/dialogs/ShortcutHelpDialog.vue'
 import ExportDialog from '../components/dialogs/ExportDialog.vue'
+import LoginModal from '../components/dialogs/LoginModal.vue'
 import ModalShell from '../components/dialogs/ModalShell.vue'
 import { RULES, STAGES } from '../data/paper'
 import { useTaskStore } from '../stores/task'
@@ -20,6 +21,8 @@ import { useIssuesStore } from '../stores/issues'
 import { useVersionStore } from '../stores/version'
 import { useUiStore } from '../stores/ui'
 import { useEditorStore } from '../stores/editor'
+import { useAuthStore } from '../stores/auth'
+import { AUTH_REQUIRED } from '../api/env'
 import { useShortcut } from '../composables/useShortcut'
 
 const task = useTaskStore()
@@ -27,6 +30,12 @@ const issues = useIssuesStore()
 const version = useVersionStore()
 const ui = useUiStore()
 const editor = useEditorStore()
+const auth = useAuthStore()
+
+// 真实后端模式下，若已有 token 则拉取当前用户信息（失败会自动登出）
+onMounted(() => {
+  if (AUTH_REQUIRED && auth.token) auth.fetchMe()
+})
 
 useShortcut()
 
@@ -84,6 +93,11 @@ const TWEAK_STATES = [
         </div>
       </div>
       <div class="topbar-actions">
+        <div v-if="AUTH_REQUIRED && auth.isAuthed" class="auth-chip">
+          <AppIcon name="check" :size="12" />
+          <span>{{ auth.user?.name || auth.user?.email || '已登录' }}</span>
+          <button class="auth-link" title="退出登录" @click="auth.logout()">退出</button>
+        </div>
         <button class="icon-btn has-badge" title="通知" @click="ui.toast('暂无新通知')">
           <AppIcon name="info" :size="16" /><span class="badge" />
         </button>
@@ -193,6 +207,7 @@ const TWEAK_STATES = [
     <CompareDialog v-if="ui.showCompare" />
     <ShortcutHelpDialog v-if="ui.showShortcuts" />
     <ExportDialog v-if="ui.exportDialog" />
+    <LoginModal v-if="AUTH_REQUIRED && !auth.isAuthed" />
     <ModalShell
       v-if="ui.showResetConfirm"
       title="重置所有修改？"

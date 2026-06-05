@@ -1,26 +1,39 @@
 import axios from 'axios'
 import type { Rule } from '../types'
 import { ISSUES, RULES, STAGES } from '../data/paper'
+import { API_BASE, TOKEN_STORAGE_KEY, UNAUTHORIZED_EVENT, USE_MOCK } from './env'
 
 /**
- * 检测任务 API 客户端（方案 §4、§5）
+ * 检测任务 API 客户端（方案 §4、§5；接入 fudan-pager-check 后端 mse-tyrion 分支）
  *
- * 当前 USE_MOCK = true：所有方法走本地模拟，无需后端即可演示。
- * 接入真实后端时：把 USE_MOCK 改为 false，并在 .env 配置 VITE_API_BASE，
- * 后端只需实现 GET /rule_bases、POST /check、GET /result/{taskId} 三个接口、
- * 且响应遵循 §4.1 的 { code, message, data } 外壳即可，前端其余逻辑无需改动。
+ * USE_MOCK=true（默认）：所有方法走本地模拟，无需后端即可演示。
+ * 设置 VITE_USE_MOCK=false 即接真实后端 (/v1/rule_bases、/v1/check、/v1/tasks/{id}、/v1/result/{id})。
+ * 请求自动从 localStorage 取 JWT 写入 Authorization 头；401 时清空并派发 fpc:unauthorized 事件。
  */
-const USE_MOCK = true
 
-const http = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE ?? '/api',
+export const http = axios.create({
+  baseURL: API_BASE,
   timeout: 15000,
 })
 
-// 统一响应解包（方案 §4.1）：业务层只拿 data 字段
+// 注入 JWT
+http.interceptors.request.use((cfg) => {
+  const token = localStorage.getItem(TOKEN_STORAGE_KEY)
+  if (token) {
+    cfg.headers = cfg.headers ?? {}
+    ;(cfg.headers as Record<string, string>).Authorization = `Bearer ${token}`
+  }
+  return cfg
+})
+
+// 统一响应解包（方案 §4.1）+ 401 通知
 http.interceptors.response.use(
   (res) => res.data?.data ?? res.data,
   (err) => {
+    if (err.response?.status === 401) {
+      localStorage.removeItem(TOKEN_STORAGE_KEY)
+      window.dispatchEvent(new Event(UNAUTHORIZED_EVENT))
+    }
     const detail = err.response?.data
     return Promise.reject(new Error(detail?.message || err.message || '网络错误'))
   },
@@ -42,9 +55,16 @@ export interface ResultResp {
 
 export type ProgressCb = (percent: number) => void
 
-// ---------------- 真实后端分支 ----------------
+// ---------------- 真实后端分支（mse-tyrion） ----------------
 async function realGetRuleBases(): Promise<Rule[]> {
-  return http.get('/rule_bases')
+  const arr = await http.get<unknown, Array<Record<string, unknown>>>('/v1/rule_bases')
+  return (arr ?? []).map((x) => ({
+    id: String(x.id),
+    name: String(x.display_name ?? x.id),
+    short: String(x.display_name ?? x.id),
+    version: '',
+    summary: x.summary as Rule['summary'],
+  }))
 }
 
 async function realUploadAndCheck(
@@ -55,13 +75,41 @@ async function realUploadAndCheck(
   const form = new FormData()
   form.append('file', file)
   form.append('rule_base_id', ruleId)
-  return http.post('/check', form, {
+  const r = await http.post<unknown, Record<string, unknown>>('/v1/check', form, {
     onUploadProgress: (e) => onProgress(Math.round((e.loaded / (e.total || 1)) * 100)),
   })
+  return { taskId: String(r.task_id ?? r.taskId) }
 }
 
+// 进度走 /v1/tasks/{id}（status + progress_percent + current_stage），DONE 后再取一次 /v1/result 拿 issue 数
 async function realGetResult(taskId: string): Promise<ResultResp> {
-  return http.get(`/result/${taskId}`)
+  const t = await http.get<unknown, Record<string, unknown>>(`/v1/tasks/${taskId}`)
+  const status = String(t.status ?? '').toLowerCase()
+  if (status === 'failed') {
+    return {
+      status: 'ERROR',
+      stage: 'ERROR',
+      percent: 0,
+      issueCount: 0,
+      message: (t.error as string) || '检测失败',
+    }
+  }
+  if (status === 'done') {
+    let issueCount = 0
+    try {
+      const report = await http.get<unknown, Record<string, unknown>>(`/v1/result/${taskId}`)
+      issueCount = Array.isArray(report.issues) ? report.issues.length : 0
+    } catch {
+      // /v1/result 尚未就绪 (409) 等下次轮询再试，先按 0 处理
+    }
+    return { status: 'DONE', stage: 'DONE', percent: 100, issueCount }
+  }
+  return {
+    status: 'DETECTING',
+    stage: String(t.current_stage ?? 'PARSE'),
+    percent: Number(t.progress_percent ?? 0),
+    issueCount: 0,
+  }
 }
 
 // ---------------- 本地模拟分支 ----------------
@@ -77,7 +125,6 @@ async function mockUploadAndCheck(
   _ruleId: string,
   onProgress: ProgressCb,
 ): Promise<UploadResp> {
-  // 模拟分片上传进度
   for (let p = 0; p <= 100; p += 8) {
     onProgress(Math.min(100, p))
     await sleep(90)
@@ -97,7 +144,6 @@ function mockGetResult(taskId: string): ResultResp {
   if (elapsed >= DETECT_MS) {
     return { status: 'DONE', stage: 'DONE', percent: 100, issueCount: ISSUES.length }
   }
-  // 按时间映射到检测阶段（不含末尾 DONE）
   const phases = STAGES.filter((s) => s.id !== 'DONE')
   const idx = Math.min(phases.length - 1, Math.floor((elapsed / DETECT_MS) * phases.length))
   const s = phases[idx]
