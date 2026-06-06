@@ -25,7 +25,19 @@ def test_build_all_indexes(tmp_path, monkeypatch):
     assert len(paths) >= 2
     ids = {p.stem for p in paths}
     assert "generic" in ids
+    assert "fudan_university" in ids
     assert "scut_natural_science" in ids
+
+
+def test_fudan_index_retrieves_school_rules(tmp_path, monkeypatch):
+    monkeypatch.setattr("rag.rule_index._INDEX_DIR", tmp_path)
+
+    path = build_index("fudan_university")
+    assert path.exists()
+    result = retrieve_rules("fudan_university", "复旦 摘要 关键词 图表公式", top_k=5)
+    assert result.rule_base_id == "fudan_university"
+    assert result.results
+    assert any("复旦" in item.text or "关键词" in item.text for item in result.results)
 
 
 def _auth_headers(client):

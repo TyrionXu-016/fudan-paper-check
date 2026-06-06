@@ -10,6 +10,7 @@ from rule_bases.service import list_rule_base_ids, load_rule_base_yaml
 
 _ROOT = Path(__file__).resolve().parents[2]
 _INDEX_DIR = _ROOT / "data" / "rag"
+_RULES_DIR = _ROOT / "config" / "rules"
 _GBT7714_PATH = _ROOT / "config" / "rules" / "gbt7714.md"
 
 
@@ -143,8 +144,27 @@ def _chunks_from_gbt7714(rule_base_id: str, start_index: int) -> list[RuleChunk]
     return chunks
 
 
+def _chunks_from_rule_markdown(rule_base_id: str, start_index: int) -> list[RuleChunk]:
+    path = _RULES_DIR / f"{rule_base_id}.md"
+    chunks: list[RuleChunk] = []
+    idx = start_index
+    for title, body in _split_markdown_sections(path):
+        chunks.append(
+            _chunk_from_text(
+                rule_base_id=rule_base_id,
+                dimension="format",
+                text=f"{title}\n{body}",
+                source=f"{path.name}#{title}",
+                chunk_index=idx,
+            )
+        )
+        idx += 1
+    return chunks
+
+
 def build_index(rule_base_id: str) -> Path:
     chunks = _chunks_from_yaml(rule_base_id)
+    chunks.extend(_chunks_from_rule_markdown(rule_base_id, len(chunks)))
     chunks.extend(_chunks_from_gbt7714(rule_base_id, len(chunks)))
 
     payload = {

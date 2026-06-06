@@ -25,7 +25,7 @@ export const useTaskStore = defineStore('task', () => {
   const uploadPct = ref(0)
   const detectStage = ref('FORMAT_CHECK')
   const detectPct = ref(35)
-  const ruleId = ref('generic')
+  const ruleId = ref('fudan_university')
 
   const fileSizeText = computed(() => formatSize(fileSize.value))
   const fileTypeLabel = computed(() =>

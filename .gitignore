@@ -1,4 +1,4 @@
-data/
+/data/
 .env
 deploy/.env.prod
 .deploy_revision

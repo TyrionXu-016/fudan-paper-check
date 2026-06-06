@@ -1,0 +1,23 @@
+name: fudan_university
+display_name: 复旦大学论文规范
+summary:
+  format: 封面、题名、摘要、关键词、目录、正文层级、图表公式编号等复旦论文格式要求
+  reference: 参考文献引用标注、文后著录字段与正文引用对应关系
+  typo: 错别字、术语混用与中英文标点误用（Agent 检测）
+  grammar: 语病、长句断句、主谓搭配与学术表达清晰度（Agent 检测）
+  polish: 学术语体、客观表述、摘要与结论措辞润色（Agent 检测）
+  logic: 摘要、正文、实验数据与结论之间的一致性（Agent 检测）
+required_sections:
+  - abstract
+  - keywords
+  - references
+optional_sections:
+  - english
+patterns:
+  abstract_label: '摘\s*要[:：]'
+  keywords_label: '关键词[:：]'
+  table_caption: '^表\s*\d+(?:[-.]\d+)?'
+  figure_caption: '^图\s*\d+(?:[-.]\d+)?'
+  formula_number: '\(\d+(?:[-.]\d+)?\)'
+warnings:
+  ocr_space_in_number: '\d+\.\s+\d+'

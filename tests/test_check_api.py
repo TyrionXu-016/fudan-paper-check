@@ -30,6 +30,7 @@ def test_rule_bases_list():
     assert body["message"] == "ok"
     ids = {item["id"] for item in body["data"]}
     assert "generic" in ids
+    assert "fudan_university" in ids
     assert "scut_natural_science" in ids
 
 
@@ -39,6 +40,15 @@ def test_rule_bases_detail():
     data = res.json()["data"]
     assert data["display_name"]
     assert data["summary"]["format"]
+
+
+def test_fudan_rule_base_detail():
+    res = client.get("/v1/rule_bases/fudan_university")
+    assert res.status_code == 200
+    data = res.json()["data"]
+    assert data["display_name"] == "复旦大学论文规范"
+    assert "abstract" in data["required_sections"]
+    assert "references" in data["required_sections"]
 
 
 def test_rule_bases_not_found():
