@@ -1,4 +1,6 @@
 data/
+deploy/.env.prod
+.deploy_revision
 __pycache__/
 *.pyc
 .pytest_cache/

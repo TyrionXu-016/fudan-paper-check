@@ -1,0 +1,30 @@
+name: Deploy main
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-main
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Configure SSH
+        run: |
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          printf '%s\n' "${{ secrets.MSE_SSH_KEY }}" > ~/.ssh/mse_deploy_key
+          chmod 600 ~/.ssh/mse_deploy_key
+          ssh-keyscan -p "${{ secrets.MSE_SSH_PORT || 22 }}" "${{ secrets.MSE_SSH_HOST }}" >> ~/.ssh/known_hosts
+
+      - name: Deploy on MSE
+        run: |
+          ssh -i ~/.ssh/mse_deploy_key \
+            -p "${{ secrets.MSE_SSH_PORT || 22 }}" \
+            "${{ secrets.MSE_SSH_USER }}@${{ secrets.MSE_SSH_HOST }}" \
+            'cd /opt/fudan-pager-check && git fetch origin main && git checkout main && git pull --ff-only origin main && DEPLOY_BRANCH=main DEPLOY_DOMAIN=paper-api.tyrion.space ./deploy/deploy-on-server.sh'
