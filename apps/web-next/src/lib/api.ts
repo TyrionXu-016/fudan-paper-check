@@ -26,7 +26,21 @@ async function request<T>(
   }
   if (res.status === 204) return undefined as T;
   const contentType = res.headers.get("content-type") ?? "";
-  if (contentType.includes("application/json")) return res.json();
+  if (contentType.includes("application/json")) {
+    const body = await res.json();
+    if (
+      body &&
+      typeof body === "object" &&
+      "code" in body &&
+      "data" in body
+    ) {
+      if (body.code !== 0) {
+        throw new ApiError(res.status, body.message || res.statusText);
+      }
+      return body.data as T;
+    }
+    return body;
+  }
   return (await res.text()) as T;
 }
 

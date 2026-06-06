@@ -58,3 +58,23 @@ def test_reference_checker_finds_entries(sample_paths):
     indices = {r.index for r in doc.references}
     assert 1 in indices
     assert 16 in indices or max(indices) >= 15
+
+def test_agent_pipeline_e2e(sample_paths, monkeypatch):
+    from orchestrator.agent_runner import AgentRunner
+    from parser.span_builder import build_spans
+    
+    # Force agent mode
+    monkeypatch.setenv("AGENT_MODE", "agents")
+    # Mock LLM API Key to trigger empty response gracefully
+    monkeypatch.setenv("LLM_API_KEY", "")
+    
+    maker, mineru = sample_paths
+    doc = DualSourceFusionParser().parse_files(maker, mineru)
+    spans = build_spans(doc)
+    
+    runner = AgentRunner(journal_profile="scut_natural_science")
+    report = runner.run(doc, spans, "test-job-agents")
+    
+    # Even with empty API key, Format/Reference agents (rule-based) should still run and produce issues
+    assert len(report.issues) > 0
+    assert report.paper_title

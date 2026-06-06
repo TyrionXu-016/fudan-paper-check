@@ -12,6 +12,14 @@
 - `apps/web` — 旧版静态页（API 托管，可选）
 - `apps/api` — FastAPI 异步任务接口 + JWT 认证
 
+## 实施计划
+
+后端 API、Agent 流水线、模型微调的分模块计划见 [`docs/plans/`](docs/plans/README.md)。
+
+- [后端 API 实施计划](docs/plans/backend-api.md)（当前优先）
+- [Agent 流水线计划](docs/plans/agent-pipeline.md)
+- [模型微调计划](docs/plans/model-finetuning.md)
+
 ## 快速开始
 
 ### 1. 后端 API

@@ -1,5 +1,12 @@
 name: scut_natural_science
 display_name: 华南理工大学学报（自然科学版）
+summary:
+  format: 摘要、关键词、中图分类号、DOI、表题图题与公式编号等学报格式
+  reference: GB/T 7714 参考文献著录与正文引用标注
+  typo: 错别字与拼写（Agent 检测）
+  grammar: 语病与句式（Agent 检测）
+  polish: 学术语体与英文摘要润色（Agent 检测）
+  logic: 摘要-实验-结论数据一致性（Agent 检测）
 required_sections:
   - abstract
   - keywords

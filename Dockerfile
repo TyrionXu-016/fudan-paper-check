@@ -6,9 +6,11 @@ COPY pyproject.toml .
 COPY packages packages
 COPY apps apps
 COPY config config
-COPY samples samples
 
-RUN pip install --no-cache-dir pydantic pyyaml httpx fastapi "uvicorn[standard]" python-multipart arq redis eval_type_backport pyjwt
+RUN pip install --no-cache-dir --default-timeout=120 \
+    -i https://pypi.tuna.tsinghua.edu.cn/simple \
+    pydantic pyyaml httpx fastapi "uvicorn[standard]" python-multipart arq redis \
+    eval_type_backport pyjwt python-docx reportlab
 
 ENV PYTHONPATH=/app/packages:/app/apps
 
