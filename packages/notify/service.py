@@ -20,6 +20,10 @@ def _default_notifier() -> Notifier:
         from notify.smtp import SmtpNotifier
 
         return SmtpNotifier()
+    if mode == "webhook":
+        from notify.webhook import WebhookNotifier
+
+        return WebhookNotifier()
     return ConsoleNotifier()
 
 TEMPLATES = Path(__file__).resolve().parent / "templates"
@@ -61,6 +65,23 @@ class NotificationService:
             round_number=round_number,
             issues=issues,
             diff=diff,
+            report_url=f"{self.app_base}/mse/projects/{project.id}/rounds/{round_number}",
+        )
+        await self._safe_send(to_email, subject, html)
+
+    async def send_revision_reminder(
+        self,
+        to_email: str,
+        project: TutoringProject,
+        round_number: int,
+        due_at,
+    ) -> None:
+        subject = f"[论文辅导] 第 {round_number} 轮修改即将截止 — {project.title}"
+        html = _render(
+            "revision_reminder.html",
+            project=project,
+            round_number=round_number,
+            due_at=due_at,
             report_url=f"{self.app_base}/mse/projects/{project.id}/rounds/{round_number}",
         )
         await self._safe_send(to_email, subject, html)

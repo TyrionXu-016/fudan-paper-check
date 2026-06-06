@@ -3,6 +3,7 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+source "$ROOT/scripts/mse_acceptance_lib.sh"
 API="${API_BASE:-http://127.0.0.1:8000}"
 
 echo "=== MSE 全流程验收 ==="
@@ -65,10 +66,10 @@ GINV=$(curl -sf -X POST "$API/v1/mse/projects/$GPID/invite" \
   -H "Content-Type: application/json" \
   -d "{\"send_email\":false}")
 GITOKEN=$(echo "$GINV" | python3 -c "import sys,json; print(json.load(sys.stdin)['token'])")
-SAMPLE_G=$(find "$ROOT/samples" -name '*_maker.md' 2>/dev/null | head -1)
+SAMPLE_G=$(mse_pick_submission_file "$ROOT")
 if [[ -n "$SAMPLE_G" ]]; then
   GSUB=$(curl -sf -X POST "$API/v1/mse/invites/$GITOKEN/submissions" \
-    -F "file=@$SAMPLE_G;filename=paper.pdf;type=application/pdf")
+    -F "file=@$SAMPLE_G;filename=$(mse_submission_filename "$SAMPLE_G");type=$(mse_submission_mime "$SAMPLE_G")")
   if echo "$GSUB" | grep -q '"round_number"'; then
     ok "POST /invites/{token}/submissions (免登录)"
   else
@@ -85,11 +86,11 @@ else
   ok "GET /projects/{id}/rounds (空列表可接受)"
 fi
 
-SAMPLE=$(find "$ROOT/samples" -name '*_maker.md' 2>/dev/null | head -1)
+SAMPLE=$(mse_pick_submission_file "$ROOT")
 if [[ -n "$SAMPLE" ]]; then
   SUB=$(curl -sf -X POST "$API/v1/mse/projects/$PID/submissions" \
     -H "Authorization: Bearer $STU_TOKEN" \
-    -F "file=@$SAMPLE;filename=paper.pdf;type=application/pdf")
+    -F "file=@$SAMPLE;filename=$(mse_submission_filename "$SAMPLE");type=$(mse_submission_mime "$SAMPLE")")
   ROUND=$(echo "$SUB" | python3 -c "import sys,json; print(json.load(sys.stdin)['round_number'])")
   sleep 2
 

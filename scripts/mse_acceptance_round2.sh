@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # 第 2 轮提交 + diff 验收
 set -euo pipefail
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+source "$ROOT/scripts/mse_acceptance_lib.sh"
 API="${API_BASE:-http://127.0.0.1:8000}"
 
 rand() { python3 -c "import uuid; print(uuid.uuid4().hex[:8])"; }
@@ -30,12 +32,21 @@ curl -sf -X POST "$API/v1/mse/projects/$PID/accept" \
   -H "Authorization: Bearer $STU_TOKEN" -H "Content-Type: application/json" \
   -d "{\"token\":\"$TOK\"}" >/dev/null
 
-SAMPLE=$(find "$(dirname "$0")/../samples" -name '*_maker.md' | head -1)
+SAMPLE=$(mse_pick_submission_file "$ROOT")
 for round in 1 2; do
   curl -sf -X POST "$API/v1/mse/projects/$PID/submissions" \
     -H "Authorization: Bearer $STU_TOKEN" \
-    -F "file=@$SAMPLE;filename=paper.pdf;type=application/pdf" >/dev/null
+    -F "file=@$SAMPLE;filename=$(mse_submission_filename "$SAMPLE");type=$(mse_submission_mime "$SAMPLE")" >/dev/null
   sleep 3
+  if mse_is_strict_mode; then
+    REPORT=$(curl -sf "$API/v1/mse/projects/$PID/rounds/$round/report" \
+      -H "Authorization: Bearer $ADV_TOKEN")
+    STATUS=$(echo "$REPORT" | python3 -c "import sys,json; print(json.load(sys.stdin).get('review_status','unknown'))")
+    if [[ "$STATUS" == "parse_failed" ]]; then
+      echo "FAIL: strict conversion failed for round $round (status=$STATUS)" >&2
+      exit 1
+    fi
+  fi
   echo "  完成第 ${round} 轮提交"
 done
 

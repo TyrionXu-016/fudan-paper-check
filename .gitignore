@@ -6,6 +6,7 @@ deploy/.env.prod
 __pycache__/
 *.pyc
 .pytest_cache/
+.playwright-cli/
 .venv/
 *.egg-info/
 apps/web-next/node_modules/

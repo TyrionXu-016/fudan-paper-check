@@ -4,6 +4,7 @@ set -euo pipefail
 
 API="${API_BASE:-http://127.0.0.1:8000}"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+source "$ROOT/scripts/mse_acceptance_lib.sh"
 
 if [[ -z "${LLM_API_KEY:-}" ]]; then
   echo "SKIP: 未设置 LLM_API_KEY。请在项目根目录 .env 中配置 LLM_API_KEY，重启 API 后重试。"
@@ -43,10 +44,10 @@ curl -sf -X POST "$API/v1/mse/projects/$PID/accept" \
   -H "Content-Type: application/json" \
   -d "{\"token\":\"$ITOKEN\"}" >/dev/null
 
-SAMPLE=$(find "$ROOT/samples" -name '*_maker.md' | head -1)
+SAMPLE=$(mse_pick_submission_file "$ROOT")
 curl -sf -X POST "$API/v1/mse/projects/$PID/submissions" \
   -H "Authorization: Bearer $STU_TOKEN" \
-  -F "file=@$SAMPLE;filename=paper.pdf;type=application/pdf" >/dev/null
+  -F "file=@$SAMPLE;filename=$(mse_submission_filename "$SAMPLE");type=$(mse_submission_mime "$SAMPLE")" >/dev/null
 
 echo "等待 LLM 分析 (最多 120s)..."
 for i in $(seq 1 24); do
@@ -60,9 +61,15 @@ import sys,json
 r=json.load(sys.stdin, strict=False)
 issues=(r.get('report') or {}).get('issues') or []
 llm=sum(1 for i in issues if getattr(i.get('issue_type'),'str',i.get('issue_type'))=='llm' or i.get('issue_type')=='llm')
+skips=sum(1 for i in issues if i.get('code')=='MSE_LLM_SKIP')
 print(f'  Issue 总数={len(issues)} llm类型={llm}')
+if skips:
+    print(f'  MSE_LLM_SKIP count={skips}')
+else:
+    print('  LLM live fallback sentinel=0')
 gate=r.get('gate') or {}
 print(f'  门禁 passed={gate.get(\"passed\")}')
+raise SystemExit(1 if skips else 0)
 "
     GATE=$(echo "$REP" | python3 -c "import sys,json; print((json.load(sys.stdin, strict=False).get('gate') or {}).get('passed'))")
     if [[ "$GATE" == "True" ]]; then

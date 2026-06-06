@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # MSE 核心闭环本地验收脚本
 set -euo pipefail
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+source "$ROOT/scripts/mse_acceptance_lib.sh"
 API="${API_BASE:-http://127.0.0.1:8000}"
 PASS=0
 FAIL=0
@@ -77,13 +79,13 @@ else
 fi
 
 # 7. Submit sample paper (use existing sample md as maker path via inline job)
-SAMPLE=$(find "$(dirname "$0")/../samples" -name '*_maker.md' 2>/dev/null | head -1)
+SAMPLE=$(mse_pick_submission_file "$ROOT")
 if [[ -z "$SAMPLE" ]]; then
-  bad "找不到 samples/*_maker.md，跳过提交验收"
+  bad "找不到可提交样本"
 else
   SUB=$(curl -sf -X POST "$API/v1/mse/projects/$PID/submissions" \
     -H "Authorization: Bearer $STU_TOKEN" \
-    -F "file=@$SAMPLE;filename=paper.pdf;type=application/pdf")
+    -F "file=@$SAMPLE;filename=$(mse_submission_filename "$SAMPLE");type=$(mse_submission_mime "$SAMPLE")")
   ROUND=$(echo "$SUB" | python3 -c "import sys,json; print(json.load(sys.stdin)['round_number'])")
   ok "学生提交第 ${ROUND} 轮 (inline worker)"
 
@@ -99,7 +101,15 @@ else
     -H "Authorization: Bearer $STU_TOKEN")
 
   STATUS=$(python3 -c "import json; print(json.load(open('/tmp/mse_rep_a.json'), strict=False)['review_status'])" 2>/dev/null || echo "unknown")
-  if [[ "$REP_A" == "200" ]]; then ok "导师可读报告 (status=$STATUS)"; else bad "导师可读报告"; fi
+  if [[ "$REP_A" == "200" ]]; then
+    if mse_is_strict_mode && [[ "$STATUS" == "parse_failed" ]]; then
+      bad "严格模式转换失败 (status=$STATUS)"
+    else
+      ok "导师可读报告 (status=$STATUS)"
+    fi
+  else
+    bad "导师可读报告"
+  fi
 
   if [[ "$STATUS" == "pending_release" && "$REP_S" == "403" ]]; then
     ok "auto_notify=false: 学生未发布前 403"

@@ -1,0 +1,9 @@
+<!doctype html>
+<html>
+<body>
+  <p>同学你好，</p>
+  <p>项目「{{ project.title }}」第 {{ round_number }} 轮修改即将截止。</p>
+  <p>截止时间：{{ due_at.isoformat() }}</p>
+  <p><a href="{{ report_url }}">查看审查意见并提交修订</a></p>
+</body>
+</html>

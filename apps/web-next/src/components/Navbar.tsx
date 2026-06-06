@@ -18,38 +18,45 @@ export function Navbar() {
   if (!user) return null;
 
   return (
-    <header className="border-b border-stone-200 bg-white/80 backdrop-blur">
-      <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-teal-700">
-            Fudan Paper Check
-          </p>
-          <h1 className="text-lg font-semibold text-stone-900">论文预检查</h1>
-        </div>
-        <nav className="flex items-center gap-2">
-          {links.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className={`rounded-full px-4 py-2 text-sm ${
-                pathname.startsWith(link.href)
-                  ? "bg-teal-700 text-white"
-                  : "text-stone-600 hover:bg-stone-100"
-              }`}
-            >
-              {link.label}
-            </Link>
-          ))}
-          <div className="ml-4 hidden text-sm text-stone-500 sm:block">
-            {user.name || user.email}
+    <header className="relative z-20 border-b border-ink/10 bg-paper-elevated/75 backdrop-blur-md">
+      <div className="mx-auto flex max-w-[80rem] items-center justify-between gap-6 px-6 py-4">
+        <Link href="/mse/dashboard" className="group flex items-center gap-4">
+          <span
+            className="hidden h-11 w-1 shrink-0 rounded-full bg-vermillion sm:block"
+            aria-hidden
+          />
+          <div>
+            <p className="ui-label">Fudan · Paper Check</p>
+            <p className="display-title text-xl transition-colors group-hover:text-vermillion">
+              论文预检查
+            </p>
           </div>
+        </Link>
+
+        <nav className="flex flex-wrap items-center gap-1">
+          {links.map((link) => {
+            const active = pathname.startsWith(link.href);
+            return (
+              <Link
+                key={link.href}
+                href={link.href}
+                className={active ? "nav-link nav-link--active" : "nav-link"}
+              >
+                {link.label}
+              </Link>
+            );
+          })}
+          <span className="mx-2 hidden h-5 w-px bg-ink/15 sm:block" aria-hidden />
+          <span className="hidden max-w-[12rem] truncate font-[family-name:var(--font-sans)] text-xs text-ink-muted sm:block">
+            {user.name || user.email}
+          </span>
           <button
             type="button"
             onClick={() => {
               logout();
               router.push("/login");
             }}
-            className="ml-2 rounded-full border border-stone-200 px-4 py-2 text-sm text-stone-600 hover:bg-stone-50"
+            className="btn btn-ghost ml-1"
           >
             退出
           </button>

@@ -20,9 +20,13 @@ NUMERIC_PATTERN = re.compile(
 class ConsistencyChecker(BaseChecker):
     category = CheckCategory.CONSISTENCY
 
-    def __init__(self, llm_enabled: bool | None = None) -> None:
+    def __init__(self, llm_enabled: bool | None = None, client=None) -> None:
+        self.client = client
         if llm_enabled is None:
-            llm_enabled = bool(os.getenv("OPENAI_API_KEY") or os.getenv("LLM_API_KEY"))
+            if client is not None:
+                llm_enabled = bool(client.is_available())
+            else:
+                llm_enabled = bool(os.getenv("OPENAI_API_KEY") or os.getenv("LLM_API_KEY"))
         self.llm_enabled = llm_enabled
 
     def check(self, doc: PaperDocument) -> list[Issue]:
@@ -133,9 +137,14 @@ class ConsistencyChecker(BaseChecker):
             },
         }
         try:
-            from agents.llm_client import llm_client
+            if self.client is None:
+                from agents.llm_client import llm_client
 
-            data = llm_client.complete_json(
+                client = llm_client
+            else:
+                client = self.client
+
+            data = client.complete_json(
                 "你是论文预检查助手。仅返回 JSON，不要 markdown。"
                 "评估摘要是否覆盖问题/方法/数据/结果/结论，"
                 "并找出结论中可能缺少实验支撑的 claim。",

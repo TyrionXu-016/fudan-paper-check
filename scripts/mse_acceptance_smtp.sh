@@ -3,6 +3,8 @@
 set -euo pipefail
 
 API="${API_BASE:-http://127.0.0.1:8000}"
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+source "$ROOT/scripts/mse_acceptance_lib.sh"
 
 if [[ "${NOTIFIER:-console}" != "smtp" ]] || [[ -z "${SMTP_HOST:-}" ]]; then
   echo "SKIP: 未配置 SMTP。请在项目根目录 .env 设置 NOTIFIER=smtp 和 SMTP_*，重启 API 后重试。"
@@ -13,7 +15,25 @@ echo "=== SMTP 邮件验收 ==="
 rand() { python3 -c "import uuid; print(uuid.uuid4().hex[:8])"; }
 
 ADV_EMAIL="${SMTP_TEST_ADV:-adv-smtp-$(rand)@local.test}"
-STU_EMAIL="${SMTP_TEST_STU:-stu-smtp-$(rand)@local.test}"
+STU_EMAIL="${SMTP_TEST_STU:-${SMTP_USER:-stu-smtp-$(rand)@local.test}}"
+
+PYTHONPATH="$ROOT/packages:$ROOT/apps" SMTP_PREFLIGHT_TO="$STU_EMAIL" python3 - <<'PY'
+import asyncio
+import os
+from notify.smtp import SmtpNotifier
+
+async def main():
+    to_email = os.environ["SMTP_PREFLIGHT_TO"]
+    await SmtpNotifier().send(
+        to_email,
+        "[论文辅导] SMTP preflight",
+        "<p>SMTP preflight succeeded.</p>",
+        text_body="SMTP preflight succeeded.",
+    )
+
+asyncio.run(main())
+PY
+echo "  ✓ SMTP preflight 已发送"
 
 ADV_TOKEN=$(curl -sf -X POST "$API/v1/auth/register" \
   -H "Content-Type: application/json" \
@@ -48,11 +68,10 @@ curl -sf -X POST "$API/v1/mse/projects/$PID/accept" \
   -H "Content-Type: application/json" \
   -d "{\"token\":\"$TOK\"}" >/dev/null
 
-ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-SAMPLE=$(find "$ROOT/samples" -name '*_maker.md' | head -1)
+SAMPLE=$(mse_pick_submission_file "$ROOT")
 curl -sf -X POST "$API/v1/mse/projects/$PID/submissions" \
   -H "Authorization: Bearer $STU_TOKEN" \
-  -F "file=@$SAMPLE;filename=paper.pdf;type=application/pdf" >/dev/null
+  -F "file=@$SAMPLE;filename=$(mse_submission_filename "$SAMPLE");type=$(mse_submission_mime "$SAMPLE")" >/dev/null
 sleep 3
 echo "  ✓ 提交完成，审查意见邮件应发往 $STU_EMAIL"
 echo "=== 请人工确认收件箱 ==="

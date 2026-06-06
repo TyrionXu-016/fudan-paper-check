@@ -849,55 +849,55 @@ packages/notify/
 
 ### Phase M0 — 基础域模型与分支脚手架（1 周）
 
-- [ ] M0-1：创建 `packages/mse/` 目录与 Pydantic 模型
-- [ ] M0-2：扩展 `User` 角色字段（advisor/student）
-- [ ] M0-3：SQLite 建表（`packages/storage/db.py` + ORM）+ `mse_repository` + `MseRoundReport`
-- [ ] M0-3b：users 迁移至 SQLite（双写过渡）
-- [ ] M0-3c：Docker Compose 挂载 `pager_data`→`/app/data` + `MSE_DATABASE_URL` + deploy 文档
-- [ ] M0-4：修订轮次 FSM 单元测试
-- [ ] M0-5：`samples/mse/` 骨架（README、manifest.yaml、.gitignore）
+- [x] M0-1：创建 `packages/mse/` 目录与 Pydantic 模型
+- [x] M0-2：扩展 `User` 角色字段（advisor/student）
+- [x] M0-3：SQLite 建表（`packages/storage/db.py` + ORM）+ `mse_repository` + `MseRoundReport`
+- [x] M0-3b：users 迁移至 SQLite（启动时从 `users.json` 幂等导入并备份）
+- [x] M0-3c：Docker Compose 挂载 `pager_data`→`/app/data` + `MSE_DATABASE_URL` + deploy 文档
+- [x] M0-4：修订轮次 FSM 单元测试
+- [x] M0-5：`samples/mse/` 骨架（README、manifest.yaml、.gitignore）
 
 ### Phase M1 — 页码定位与 MSE Agent（1.5 周）
 
-- [ ] M1-0：`LLMClient`（DeepSeek 默认）+ 迁移 `ConsistencyChecker._call_llm`
-- [ ] M1-0b：扩展 MinerU 转换（PDF + 图片 + zip）；MSE 禁用 mock fallback
-- [ ] M1-1：`PageMapper`：MinerU 页标记 + line/block → page
-- [ ] M1-2：扩展 `Issue` schema + `issue_enricher` 回填 page
-- [ ] M1-3：规范文档上传 → RAG 索引（复用 `rule_bases` 或独立 index）
-- [ ] M1-3c：`FigureTableChecker` + 增强 `FigureRef`/`_parse_figures`（MinerU 图块+题注+页码）
-- [ ] M1-3b：`SectionChunker` + `IssueMerger` — 章节块迭代与 Issue 去重
-- [ ] M1-4：Prompt 精密设计落地 — 见 [mse-prompt-design.md §11](./mse-prompt-design.md)（P-1～P-6 + MseReviewAgent E2E）
-- [ ] M1-5：集成测试：知网下载的 **CS 硕士论文** + 学院规范 → 带页码 Issue 列表
+- [x] M1-0：`LLMClient`（DeepSeek 默认）+ `ConsistencyChecker` 注入式 LLMClient 验证
+- [x] M1-0b：扩展 MinerU 转换（PDF + 图片 + zip）；MSE 禁用 mock fallback
+- [x] M1-1：`PageMapper`：MinerU 页标记 + line/block → page
+- [x] M1-2：扩展 `Issue` schema + `issue_enricher` 回填 page
+- [x] M1-3：规范文档上传 → RAG 索引（复用 `rule_bases` 或独立 index）
+- [x] M1-3c：`FigureTableChecker` + 增强 `FigureRef`/`_parse_figures`（MinerU 图块+题注+页码）
+- [x] M1-3b：`SectionChunker` + `IssueMerger` — 章节块迭代与 Issue 去重
+- [x] M1-4：Prompt 精密设计落地 — 见 [mse-prompt-design.md §11](./mse-prompt-design.md)（P-1～P-6 + MseReviewAgent E2E）
+- [ ] M1-5：集成测试：知网下载的 **CS 硕士论文** + 学院规范 → 带页码 Issue 列表（本地准生产已使用公开硕士论文 PDF；仍需你提供 CNKI/机构下载样本）
 
 ### Phase M2 — 邮件与闭环（1 周）
 
-- [ ] M2-1：`packages/notify/` SMTP 实现
-- [ ] M2-2：邮件 HTML 模板（问题表格含页码）
-- [ ] M2-3：`GateEvaluator` 门禁判定
-- [ ] M2-4：Worker 任务：`mse_analyze_round` 串联解析→检查→Agent→门禁→邮件
-- [ ] M2-5：多轮提交：round_number 自增，历史报告可查阅
+- [x] M2-1：`packages/notify/` SMTP 实现
+- [x] M2-2：邮件 HTML 模板（问题表格含页码）
+- [x] M2-3：`GateEvaluator` 门禁判定
+- [x] M2-4：Worker 任务：`mse_analyze_round` 串联解析→检查→Agent→门禁→邮件
+- [x] M2-5：多轮提交：round_number 自增，历史报告可查阅
 
 ### Phase M3 — API 与前端（1.5 周）
 
-- [ ] M3-1：FastAPI `/v1/mse/*` 路由
-- [ ] M3-2：导师创建项目 + 邀请学生 API
-- [ ] M3-3：Next.js 导师/学生视图
-- [ ] M3-4：`IssueList` 组件增加页码、规范引用列
-- [ ] M3-5：轮次时间线 UI
+- [x] M3-1：FastAPI `/v1/mse/*` 路由
+- [x] M3-2：导师创建项目 + 邀请学生 API
+- [x] M3-3：Next.js 导师/学生视图
+- [x] M3-4：`IssueList` 组件增加页码、规范引用列
+- [x] M3-5：轮次时间线 UI
 
 ### Phase M4 — 创新性审查（1 周）
 
-- [ ] M4-1：`InnovationAgent`：基于全文 + 摘要生成创新性预审报告
-- [ ] M4-2：达标后自动触发 + 邮件通知导师
-- [ ] M4-3：导师审查页面（LLM 摘要 + 人工评语表单）
-- [ ] M4-4：导师决定回写 → 通知学生
+- [x] M4-1：`InnovationAgent`：基于全文 + 摘要生成创新性预审报告
+- [x] M4-2：达标后自动触发 + 邮件通知导师
+- [x] M4-3：导师审查页面（LLM 摘要 + 人工评语表单）
+- [x] M4-4：导师决定回写 → 通知学生
 
 ### Phase M5 — 增强（可选）
 
-- [ ] M5-1：带批注 PDF 导出（页码锚点 + Issue 列表）
-- [ ] M5-2：修订 diff（对比相邻两轮改动）
-- [ ] M5-3：截止日期提醒 cron
-- [ ] M5-4：与飞书/企业微信通知集成
+- [x] M5-1：带批注 PDF 导出（页码锚点 + Issue 列表；报告 PDF 含可抽取锚点、规范引用、原文摘录）
+- [x] M5-2：修订 diff（对比相邻两轮改动）
+- [x] M5-3：截止日期提醒 cron
+- [x] M5-4：与飞书/企业微信通知集成（webhook notifier；live 验证需配置 `WEBHOOK_URL`）
 
 ---
 
@@ -939,7 +939,7 @@ packages/notify/
 
 **流程**：机构账号下载 PDF → 本地放入 `theses/` → `PDFConverter` 转 MD → 绑定 `specs/` 中对应学校规范 → 跑单元/集成/API 测试。
 
-**CI**：无本地 PDF 时跳过需真实论文的集成测试；保留 1 份脱敏小样本 MD 或 fallback 至现有 `samples/*_maker.md`。
+**CI**：普通 CI 无本地 PDF 时保留 mock/fallback；本地准生产验收通过 `scripts/mse_acceptance_quasi_prod.sh` 下载公开 CS 硕士论文 PDF，并禁止任何 `SKIP` 阶段。为保证本机 Docker 验收稳定，准生产脚本默认使用页码窗口让 Maker 与 MinerU 转换公开论文前 8 页；完整 PDF 仍落到 ignored 样本目录，生产全文转换时不设置页码窗口。
 
 ---
 
@@ -951,6 +951,8 @@ packages/notify/
 4. 解析失败可 `POST .../retry`；`auto_notify=false` 时学生仅在导师 `release` 后可见报告；
 5. 门禁通过后导师收到邮件；`GET /v1/mse/dashboard` 待办计数与项目状态一致；
 6. 全流程 Issue 均可追溯到规范文档条目（`rule_ref`）。
+
+本地准生产附加门禁：`scripts/mse_acceptance_quasi_prod.sh` 必须在 `PDF_CONVERTER_MODE=docker`、`MSE_ALLOW_MOCK_FALLBACK=0`、DeepSeek、SMTP 均可用时退出码为 0，且阶段日志不包含 `SKIP`。脚本启动后会先运行 `PYTHONPATH=packages:apps python3 scripts/mse_config_status.py --quasi-prod-only`，统一检查准生产 env 与 Dartmouth 公开 PDF；缺配置时返回 2 且不打印 secrets。若 Dartmouth 页面触发 WAF，可手动下载后用 `scripts/mse_import_public_thesis_pdf.py` 校验并导入。完整外部缺口仍可用 `scripts/mse_config_status.py` 查看，包括 CNKI/机构样本和 webhook live 配置；所有外部配置齐备后，用 `scripts/mse_acceptance_final_live.sh` 串起准生产、私有样本 live、webhook live。默认 `MINERU_START_PAGE=0` / `MINERU_END_PAGE=7` 只限制本地验收转换范围，不改变 strict 模式：缺失/空/stub MinerU Markdown 仍直接失败。
 
 ---
 

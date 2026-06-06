@@ -1,10 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { IssueList } from "@/components/IssueList";
-import { Navbar } from "@/components/Navbar";
+import { AppShell, LoadingScreen } from "@/components/ui/AppShell";
+import { PageHeader } from "@/components/ui/PageHeader";
 import { api } from "@/lib/api";
 import { reviewStatusClass, reviewStatusLabel } from "@/lib/mse";
 import { useAuth } from "@/lib/auth";
@@ -95,15 +95,11 @@ export default function MseRoundReportPage() {
   }
 
   if (fetching) {
-    return <div className="flex min-h-screen items-center justify-center text-stone-500">加载报告…</div>;
+    return <LoadingScreen label="加载报告…" />;
   }
 
   if (!data) {
-    return (
-      <div className="flex min-h-screen items-center justify-center text-stone-500">
-        {error || "报告不可用"}
-      </div>
-    );
+    return <LoadingScreen label={error || "报告不可用"} />;
   }
 
   const canRelease = isAdvisor && data.review_status === "pending_release";
@@ -111,48 +107,46 @@ export default function MseRoundReportPage() {
     data.review_status === "parse_failed" || data.review_status === "analysis_failed";
 
   return (
-    <div className="min-h-screen bg-[linear-gradient(180deg,#faf7f0,#f4f1ea)]">
-      <Navbar />
-      <main className="mx-auto max-w-5xl px-6 py-8">
-        <Link href={`/mse/projects/${projectId}`} className="text-sm text-teal-700 hover:underline">
-          ← 返回项目
-        </Link>
-
-        <div className="mt-4 flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <h2 className="text-2xl font-semibold text-stone-900">第 {roundNumber} 轮审查报告</h2>
-            <span
-              className={`mt-2 inline-block rounded-full px-3 py-1 text-xs font-medium ${reviewStatusClass(data.review_status)}`}
-            >
+    <AppShell width="wide">
+      <PageHeader
+        eyebrow="审查报告"
+        title={`第 ${roundNumber} 轮`}
+        description={
+          <>
+            <span className={`${reviewStatusClass(data.review_status)} mr-2`}>
               {reviewStatusLabel(data.review_status)}
             </span>
             {!data.released && (
-              <p className="mt-2 text-sm text-violet-700">尚未向学生发布</p>
+              <span className="text-ink-muted">尚未向学生发布</span>
             )}
-          </div>
-          <div className="flex gap-2">
+          </>
+        }
+        backHref={`/mse/projects/${projectId}`}
+        backLabel="项目"
+        actions={
+          <>
             <button
               type="button"
               disabled={!!exporting}
               onClick={() => handleExport("md")}
-              className="rounded-full border border-stone-300 px-4 py-2 text-sm hover:bg-white disabled:opacity-50"
+              className="btn btn-secondary"
             >
-              {exporting === "md" ? "导出中…" : "导出 Markdown"}
+              {exporting === "md" ? "导出中…" : "Markdown"}
             </button>
             <button
               type="button"
               disabled={!!exporting}
               onClick={() => handleExport("pdf")}
-              className="rounded-full border border-stone-300 px-4 py-2 text-sm hover:bg-white disabled:opacity-50"
+              className="btn btn-secondary"
             >
-              {exporting === "pdf" ? "导出中…" : "导出 PDF"}
+              {exporting === "pdf" ? "导出中…" : "PDF"}
             </button>
             {canRelease && (
               <button
                 type="button"
                 disabled={actionLoading === "release"}
                 onClick={handleRelease}
-                className="rounded-full bg-violet-700 px-5 py-2 text-sm text-white hover:bg-violet-800 disabled:opacity-50"
+                className="btn btn-primary"
               >
                 {actionLoading === "release" ? "发布中…" : "发布给学生"}
               </button>
@@ -162,55 +156,51 @@ export default function MseRoundReportPage() {
                 type="button"
                 disabled={actionLoading === "retry"}
                 onClick={handleRetry}
-                className="rounded-full border border-stone-300 px-5 py-2 text-sm hover:bg-white disabled:opacity-50"
+                className="btn btn-secondary"
               >
                 重新分析
               </button>
             )}
-          </div>
+          </>
+        }
+      />
+
+      {error && <p className="mb-4 text-sm text-vermillion">{error}</p>}
+
+      {data.gate && (
+        <div className={`alert mb-6 ${data.gate.passed ? "alert-info" : "alert-warn"}`}>
+          门禁：{data.gate.passed ? "通过" : "未通过"} — {data.gate.reason}
         </div>
+      )}
 
-        {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
+      {summary && (
+        <div className="mb-8 grid grid-cols-3 gap-4">
+          <Stat label="错误" value={summary.errors} tone="vermillion" />
+          <Stat label="警告" value={summary.warnings} tone="gold" />
+          <Stat label="提示" value={summary.infos} tone="jade" />
+        </div>
+      )}
 
-        {data.gate && (
-          <div
-            className={`mt-6 rounded-2xl p-4 text-sm ${
-              data.gate.passed ? "bg-emerald-50 text-emerald-900" : "bg-amber-50 text-amber-900"
-            }`}
-          >
-            门禁：{data.gate.passed ? "通过" : "未通过"} — {data.gate.reason}
+      {data.diff && data.diff.base_round > 0 && (
+        <section className="mb-8">
+          <h3 className="display-title mb-4 text-xl">与第 {data.diff.base_round} 轮对比</h3>
+          <div className="grid gap-4 sm:grid-cols-3">
+            <DiffCard label="已修复" count={data.diff.fixed.length} className="text-jade" />
+            <DiffCard label="仍存在问题" count={data.diff.persistent.length} className="text-gold" />
+            <DiffCard label="新增" count={data.diff.new.length} className="text-vermillion" />
           </div>
-        )}
-
-        {summary && (
-          <div className="mt-6 grid grid-cols-3 gap-4">
-            <Stat label="错误" value={summary.errors} tone="red" />
-            <Stat label="警告" value={summary.warnings} tone="amber" />
-            <Stat label="提示" value={summary.infos} tone="blue" />
-          </div>
-        )}
-
-        {data.diff && data.diff.base_round > 0 && (
-          <section className="mt-8">
-            <h3 className="mb-3 text-lg font-medium text-stone-900">与第 {data.diff.base_round} 轮对比</h3>
-            <div className="grid gap-4 sm:grid-cols-3 text-sm">
-              <DiffCard label="已修复" count={data.diff.fixed.length} className="text-emerald-700" />
-              <DiffCard label="仍存在问题" count={data.diff.persistent.length} className="text-amber-700" />
-              <DiffCard label="新增" count={data.diff.new.length} className="text-red-700" />
-            </div>
-          </section>
-        )}
-
-        <section className="mt-8">
-          <h3 className="mb-3 text-lg font-medium text-stone-900">问题清单</h3>
-          <IssueList
-            issues={issues}
-            onDismiss={isAdvisor ? handleDismiss : undefined}
-            dismissLoading={actionLoading}
-          />
         </section>
-      </main>
-    </div>
+      )}
+
+      <section>
+        <h3 className="display-title mb-4 text-xl">问题清单</h3>
+        <IssueList
+          issues={issues}
+          onDismiss={isAdvisor ? handleDismiss : undefined}
+          dismissLoading={actionLoading}
+        />
+      </section>
+    </AppShell>
   );
 }
 
@@ -221,13 +211,20 @@ function Stat({
 }: {
   label: string;
   value: number;
-  tone: "red" | "amber" | "blue";
+  tone: "vermillion" | "gold" | "jade";
 }) {
-  const bg = { red: "bg-red-50", amber: "bg-amber-50", blue: "bg-blue-50" }[tone];
+  const border =
+    tone === "vermillion"
+      ? "border-vermillion/20"
+      : tone === "gold"
+        ? "border-gold/30"
+        : "border-jade/25";
   return (
-    <div className={`rounded-2xl ${bg} p-4 ring-1 ring-stone-200/50`}>
-      <p className="text-xs text-stone-500">{label}</p>
-      <p className="text-2xl font-semibold text-stone-900">{value}</p>
+    <div className={`card-surface border-l-4 ${border} p-4`}>
+      <p className="font-[family-name:var(--font-sans)] text-xs uppercase tracking-wider text-ink-faint">
+        {label}
+      </p>
+      <p className="stat-value mt-2">{value}</p>
     </div>
   );
 }
@@ -242,9 +239,9 @@ function DiffCard({
   className: string;
 }) {
   return (
-    <div className="rounded-xl bg-white p-4 ring-1 ring-stone-200/80">
-      <p className="text-stone-500">{label}</p>
-      <p className={`text-xl font-semibold ${className}`}>{count}</p>
+    <div className="card-inset p-4">
+      <p className="font-[family-name:var(--font-sans)] text-xs text-ink-faint">{label}</p>
+      <p className={`stat-value mt-1 text-2xl ${className}`}>{count}</p>
     </div>
   );
 }

@@ -83,8 +83,18 @@ curl -H "Host: pager-api.tyrion.space" http://127.0.0.1/v1/rule_bases
 | `PDF_CONVERTER_MODE` | `docker` | 论文/规范 PDF 走 MinerU |
 | `MSE_ALLOW_MOCK_FALLBACK` | `0` | 禁用样例 MD 回退 |
 | `MINERU_IMAGE` / `MAKER_IMAGE` | 自建镜像名 | Worker 通过 docker.sock 调用 |
+| `MINERU_BACKEND` / `MINERU_METHOD` | `pipeline` / `auto` | MinerU CLI 后端与解析方法；born-digital 验收样本可用 `txt` |
+| `MINERU_TIMEOUT_SECONDS` | `1800` | 真实论文首次转换和模型冷启动超时 |
+| `MINERU_CACHE_VOLUME` | `fudan-pager-mineru-cache` | 挂载到 MinerU 容器 `/root/.cache` 的 Docker 模型缓存 |
+| `MINERU_CACHE_DIR` | 可选 | 显式宿主目录缓存；未设置时使用 `MINERU_CACHE_VOLUME` |
+| `MINERU_START_PAGE` / `MINERU_END_PAGE` | 生产留空 | 本地准生产验收可限制公开论文页码窗口；Maker 与 MinerU 都会使用该窗口，生产全文转换不要设置 |
+| `MINERU_PDF_RENDER_THREADS` / `MINERU_PROCESSING_WINDOW_SIZE` | 生产按机器调整 | MinerU 渲染并发和处理窗口；本地验收默认降到 `1` / `8` |
+| `MINERU_FORMULA_ENABLE` / `MINERU_TABLE_ENABLE` | 生产按需求启用 | 本地验收可关闭以降低模型负载 |
 | `MSE_INVITE_SECRET` | 随机串 | 邀请 token HMAC |
-| `NOTIFIER` | `smtp` | 邮件：`console` 仅日志 |
+| `NOTIFIER` | `smtp` | 通知：`smtp` / `webhook` / `console` |
+| `WEBHOOK_KIND` / `WEBHOOK_URL` | 可选 | `NOTIFIER=webhook` 时使用；支持 `feishu` / `wecom` 群机器人 |
+| `MSE_REVISION_DUE_DAYS` | `7` | 学生收到问题后默认修改截止天数 |
+| `MSE_REVISION_REMINDER_WINDOW_HOURS` | `24` | 截止前多少小时发送一次提醒 |
 | `LLM_API_KEY` | DeepSeek Key | 未配置时 Agent 跳过 |
 
 ### 数据卷布局（`pager_data` → `/app/data`）
@@ -94,7 +104,7 @@ curl -H "Host: pager-api.tyrion.space" http://127.0.0.1/v1/rule_bases
   mse.db                 # MSE SQLite（含 WAL 文件）
   uploads/{job_id}/      # 学生论文上传
   rag/mse/{project_id}/  # 规范文档 sources + index.json
-  users.json             # 用户（过渡期）
+  users.json.bak-*       # 旧 JSON 用户迁移前备份（如存在）
 ```
 
 API 与 Worker **必须**挂载同一 `pager_data` 卷；Worker 额外挂载 `/var/run/docker.sock` 以运行 MinerU 容器。
@@ -105,8 +115,41 @@ API 与 Worker **必须**挂载同一 `pager_data` 卷；Worker 额外挂载 `/v
 # 开发（允许 mock）
 MSE_ALLOW_MOCK_FALLBACK=1 JOB_RUN_INLINE=1 ./scripts/mse_acceptance.sh
 
-# 生产前（需 MinerU 镜像 + docker.sock）
-MSE_ALLOW_MOCK_FALLBACK=0 PDF_CONVERTER_MODE=docker ./scripts/mse_acceptance_full.sh
+# 本地准生产（需真实 MinerU 镜像、DeepSeek、SMTP、公开论文 PDF；不允许 SKIP）
+PYTHONPATH=packages:apps python3 scripts/mse_config_status.py --quasi-prod-only
+./scripts/mse_acceptance_quasi_prod.sh
+
+# 公开 PDF 固定为 Dartmouth “Chinese Font Style Transfer with Neural Network”；
+# 若 Digital Commons 返回 WAF challenge，请手动下载后用导入脚本校验并复制：
+# PYTHONPATH=packages:apps python3 scripts/mse_import_public_thesis_pdf.py ~/Downloads/Chinese-Font-Style-Transfer.pdf
+
+# 截止提醒（放入 cron/systemd timer）
+PYTHONPATH=packages:apps python3 scripts/mse_revision_reminders.py
+
+# Webhook 本地端到端验收（无需真实飞书/企业微信 URL）
+PYTHONPATH=packages:apps python3 scripts/mse_acceptance_webhook.py
+
+# Webhook live 验收（需真实群机器人 URL）
+WEBHOOK_KIND=feishu WEBHOOK_URL=https://... \
+  PYTHONPATH=packages:apps python3 scripts/mse_acceptance_webhook_live.py
+# 失败时只输出阶段和错误类型，不打印完整 WEBHOOK_URL
+
+# 最终 live 聚合验收（需所有外部配置齐备）
+./scripts/mse_acceptance_final_live.sh
+
+# CNKI/机构样本齐备性检查（配置样本后运行）
+PYTHONPATH=packages:apps python3 scripts/mse_import_private_sample.py \
+  --pdf ~/Downloads/cnki-thesis.pdf \
+  --spec ~/Downloads/school-spec.pdf \
+  --school "Example University" \
+  --subfield software_engineering
+PYTHONPATH=packages:apps python3 scripts/mse_check_sample_manifest.py --require-primary
+
+# 全部外部配置总检；缺配置时返回 2，不打印 secrets 或 webhook URL
+PYTHONPATH=packages:apps python3 scripts/mse_config_status.py
+
+# CNKI/机构样本 API 验收（需 API 已按准生产方式启动）
+PYTHONPATH=packages:apps python3 scripts/mse_acceptance_private_samples.py
 ```
 
 ## 一键部署（本地）

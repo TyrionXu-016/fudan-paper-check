@@ -1,5 +1,9 @@
 from __future__ import annotations
 
+import io
+
+from pypdf import PdfReader
+
 from schema.models import CheckCategory, Issue, IssueSeverity, IssueType
 from mse.export import export_round_markdown, export_round_pdf_bytes
 
@@ -39,3 +43,27 @@ def test_export_pdf_non_empty():
         gate_reason="warnings",
     )
     assert pdf[:4] == b"%PDF"
+
+
+def test_export_pdf_contains_page_anchors_and_rule_refs():
+    issues = [
+        _issue(
+            code="ANCHOR",
+            page=3,
+            message="Anchor issue",
+            revision_hint="Use a stronger revision",
+        )
+    ]
+    issues[0].rule_ref = "rule-1"
+    issues[0].original_text = "Original quoted text"
+
+    pdf = export_round_pdf_bytes(
+        project_title="Anchor Report",
+        round_number=1,
+        issues=issues,
+    )
+
+    text = "\n".join(page.extract_text() or "" for page in PdfReader(io.BytesIO(pdf)).pages)
+    assert "Issue Anchor: page-3" in text
+    assert "rule-1" in text
+    assert "Original quoted text" in text

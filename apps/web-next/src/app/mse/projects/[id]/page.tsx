@@ -3,7 +3,8 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { Navbar } from "@/components/Navbar";
+import { AppShell, LoadingScreen } from "@/components/ui/AppShell";
+import { PageHeader } from "@/components/ui/PageHeader";
 import { RoundTimeline } from "@/components/RoundTimeline";
 import { api } from "@/lib/api";
 import { projectStatusLabel } from "@/lib/mse";
@@ -81,11 +82,7 @@ export default function MseProjectDetailPage() {
   }
 
   if (fetching || !project) {
-    return (
-      <div className="flex min-h-screen items-center justify-center text-stone-500">
-        {fetching ? "加载项目…" : "项目不存在"}
-      </div>
-    );
+    return <LoadingScreen label={fetching ? "加载项目…" : "项目不存在"} />;
   }
 
   const pendingRelease = rounds.some((r) => r.review_status === "pending_release");
@@ -97,128 +94,119 @@ export default function MseProjectDetailPage() {
     !project.advisor_id;
 
   return (
-    <div className="min-h-screen bg-[linear-gradient(180deg,#faf7f0,#f4f1ea)]">
-      <Navbar />
-      <main className="mx-auto max-w-4xl px-6 py-8">
-        <Link href="/mse/dashboard" className="text-sm text-teal-700 hover:underline">
-          ← 返回仪表盘
-        </Link>
-
-        <div className="mt-4 flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <h2 className="text-2xl font-semibold text-stone-900">{project.title}</h2>
-            <p className="mt-1 text-sm text-stone-500">
-              {projectStatusLabel(project.status)} · 当前第 {project.current_round} 轮
-            </p>
-            <p className="mt-1 text-xs text-stone-400">
-              {project.advisor_email && `导师：${project.advisor_email}`}
-              {project.student_email && ` · 学生：${project.student_email}`}
-            </p>
-            {project.rule_base_ids.length > 0 && (
-              <p className="mt-2 text-xs text-teal-800">
-                已加载默认规范（含论文常见问题）
-              </p>
+    <AppShell width="narrow">
+      <PageHeader
+        eyebrow={`${projectStatusLabel(project.status)} · 第 ${project.current_round} 轮`}
+        title={project.title}
+        description={
+          <>
+            {project.advisor_email && `导师 ${project.advisor_email}`}
+            {project.student_email && ` · 学生 ${project.student_email}`}
+            {(project.rule_base_ids?.length ?? 0) > 0 && (
+              <span className="mt-2 block text-jade">已加载默认规范（含论文常见问题）</span>
             )}
-          </div>
+          </>
+        }
+        backHref="/mse/dashboard"
+        backLabel="工作台"
+        actions={
           <div className="flex flex-wrap gap-2">
             {isStudent && (
-              <Link
-                href={`/mse/projects/${projectId}/submit`}
-                className="rounded-full bg-teal-700 px-5 py-2.5 text-sm font-medium text-white hover:bg-teal-800"
-              >
+              <Link href={`/mse/projects/${projectId}/submit`} className="btn btn-primary">
                 提交论文
               </Link>
-            )}
-            {isAdvisor && (
-              <div className="flex flex-wrap items-center gap-2">
-                <label className="cursor-pointer rounded-full border border-stone-300 px-4 py-2.5 text-sm text-stone-700 hover:bg-white">
-                  {ruleFile ? ruleFile.name : "选择规范文件"}
-                  <input
-                    type="file"
-                    accept=".md,.docx,.pdf"
-                    className="hidden"
-                    onChange={(e) => setRuleFile(e.target.files?.[0] ?? null)}
-                  />
-                </label>
-                <button
-                  type="button"
-                  onClick={handleUploadRules}
-                  disabled={rulesLoading || !ruleFile}
-                  className="rounded-full bg-teal-700 px-5 py-2.5 text-sm text-white disabled:opacity-50"
-                >
-                  {rulesLoading ? "上传中…" : "上传规范文档"}
-                </button>
-                <button
-                  type="button"
-                  onClick={handleIndexDefaultRules}
-                  disabled={rulesLoading}
-                  className="rounded-full border border-stone-300 px-4 py-2 text-xs text-stone-600 hover:bg-white disabled:opacity-50"
-                >
-                  重新索引默认规范
-                </button>
-              </div>
             )}
             {project.current_round > 0 && (
               <Link
                 href={`/mse/projects/${projectId}/rounds/${project.current_round}`}
-                className="rounded-full border border-teal-700 px-5 py-2.5 text-sm text-teal-800 hover:bg-teal-50"
+                className="btn btn-secondary"
               >
                 最新报告
               </Link>
             )}
           </div>
+        }
+      />
+
+      {isAdvisor && (
+        <div className="card-inset mb-6 flex flex-wrap items-center gap-2 p-4">
+          <label className="btn btn-secondary cursor-pointer">
+            {ruleFile ? ruleFile.name : "选择规范文件"}
+            <input
+              type="file"
+              accept=".md,.docx,.pdf"
+              className="hidden"
+              onChange={(e) => setRuleFile(e.target.files?.[0] ?? null)}
+            />
+          </label>
+          <button
+            type="button"
+            onClick={handleUploadRules}
+            disabled={rulesLoading || !ruleFile}
+            className="btn btn-primary"
+          >
+            {rulesLoading ? "上传中…" : "上传规范"}
+          </button>
+          <button
+            type="button"
+            onClick={handleIndexDefaultRules}
+            disabled={rulesLoading}
+            className="btn btn-ghost text-xs"
+          >
+            重新索引默认规范
+          </button>
         </div>
+      )}
 
-        {needsMember && (
-          <div className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
-            <p>项目尚缺成员绑定，请生成邀请链接发送给对方。</p>
-            <button
-              type="button"
-              onClick={handleSendInvite}
-              disabled={inviteLoading}
-              className="mt-3 rounded-full bg-amber-800 px-4 py-2 text-xs text-white disabled:opacity-50"
-            >
-              {inviteLoading ? "生成中…" : "生成邀请链接"}
-            </button>
-            {inviteUrl && (
-              <p className="mt-2 break-all text-xs text-stone-700">
-                <Link href={`/mse/invite/${inviteUrl.split("/").pop()}`} className="text-teal-800 underline">
-                  {inviteUrl}
-                </Link>
-              </p>
-            )}
-          </div>
-        )}
+      {needsMember && (
+        <div className="alert alert-warn mb-6">
+          <p>项目尚缺成员绑定，请生成邀请链接发送给对方。</p>
+          <button
+            type="button"
+            onClick={handleSendInvite}
+            disabled={inviteLoading}
+            className="btn btn-primary mt-3"
+          >
+            {inviteLoading ? "生成中…" : "生成邀请链接"}
+          </button>
+          {inviteUrl && (
+            <p className="mt-3 break-all font-[family-name:var(--font-sans)] text-xs">
+              <Link href={`/mse/invite/${inviteUrl.split("/").pop()}`} className="text-vermillion underline">
+                {inviteUrl}
+              </Link>
+            </p>
+          )}
+        </div>
+      )}
 
-        {isAdvisor && awaitingInnovation && (
-          <div className="mt-6 rounded-2xl border border-teal-200 bg-teal-50 p-4 text-sm text-teal-900">
-            格式门禁已通过，请进行{" "}
-            <Link href={`/mse/projects/${projectId}/review`} className="font-medium underline">
-              创新性审查
-            </Link>
-            。
-          </div>
-        )}
+      {isAdvisor && awaitingInnovation && (
+        <div className="alert alert-info mb-6">
+          格式门禁已通过，请进行{" "}
+          <Link href={`/mse/projects/${projectId}/review`} className="font-semibold underline">
+            创新性审查
+          </Link>
+          。
+        </div>
+      )}
 
-        {isAdvisor && pendingRelease && (
-          <div className="mt-6 rounded-2xl border border-violet-200 bg-violet-50 p-4 text-sm text-violet-900">
-            有待发布的分析结果，请进入对应轮次报告页点击「发布给学生」。
-          </div>
-        )}
+      {isAdvisor && pendingRelease && (
+        <div className="alert alert-accent mb-6">
+          有待发布的分析结果，请进入对应轮次报告页点击「发布给学生」。
+        </div>
+      )}
 
-        {!project.auto_notify_student && (
-          <p className="mt-4 text-xs text-stone-500">
-            本项目已关闭自动通知学生，分析完成后需导师预审发布。
-          </p>
-        )}
+      {!project.auto_notify_student && (
+        <p className="mb-6 font-[family-name:var(--font-sans)] text-xs text-ink-faint">
+          已关闭自动通知学生，分析完成后需导师预审发布。
+        </p>
+      )}
 
-        <section className="mt-8">
-          <h3 className="mb-4 text-lg font-medium text-stone-900">修订轮次</h3>
-          <div className="rounded-2xl bg-white p-6 ring-1 ring-stone-200/80">
-            <RoundTimeline projectId={projectId} rounds={rounds} />
-          </div>
-        </section>
-      </main>
-    </div>
+      <section>
+        <h3 className="display-title mb-5 text-xl">修订轮次</h3>
+        <div className="card-surface p-6">
+          <RoundTimeline projectId={projectId} rounds={rounds} />
+        </div>
+      </section>
+    </AppShell>
   );
 }

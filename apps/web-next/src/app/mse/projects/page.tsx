@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Navbar } from "@/components/Navbar";
+import { AppShell, LoadingScreen } from "@/components/ui/AppShell";
+import { PageHeader } from "@/components/ui/PageHeader";
 import { api } from "@/lib/api";
 import { projectStatusLabel } from "@/lib/mse";
 import { useAuth } from "@/lib/auth";
@@ -29,60 +30,51 @@ export default function MseProjectsPage() {
 
   const isAdvisor = (user?.role ?? "advisor") === "advisor";
 
-  return (
-    <div className="min-h-screen bg-[linear-gradient(180deg,#faf7f0,#f4f1ea)]">
-      <Navbar />
-      <main className="mx-auto max-w-4xl px-6 py-8">
-        <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <h2 className="text-2xl font-semibold text-stone-900">辅导项目</h2>
-            <p className="mt-1 text-sm text-stone-500">
-              {isAdvisor ? "您作为导师的项目" : "您参与的学生项目"}
-            </p>
-          </div>
-          <div className="flex gap-3">
-            <Link href="/mse/dashboard" className="text-sm text-teal-700 hover:underline">
-              仪表盘
-            </Link>
-            <Link
-              href="/mse/projects/new"
-              className="rounded-full bg-teal-700 px-4 py-2 text-sm text-white hover:bg-teal-800"
-            >
-              创建项目
-            </Link>
-          </div>
-        </div>
+  if (loading || !user) {
+    return <LoadingScreen />;
+  }
 
-        {fetching ? (
-          <div className="rounded-2xl bg-white p-10 text-center text-stone-500">加载中…</div>
-        ) : !projects.length ? (
-          <div className="rounded-2xl bg-white p-10 text-center text-stone-500">
-            暂无项目，{" "}
-            <Link href="/mse/projects/new" className="text-teal-700 hover:underline">
-              创建一个
-            </Link>
-          </div>
-        ) : (
-          <ul className="divide-y divide-stone-100 rounded-2xl bg-white ring-1 ring-stone-200/80">
-            {projects.map((p) => (
-              <li key={p.id}>
-                <Link
-                  href={`/mse/projects/${p.id}`}
-                  className="flex items-center justify-between px-5 py-4 hover:bg-stone-50"
-                >
-                  <div>
-                    <p className="font-medium text-stone-900">{p.title}</p>
-                    <p className="text-xs text-stone-500">
-                      {projectStatusLabel(p.status)} · 第 {p.current_round} 轮
-                    </p>
-                  </div>
-                  <span className="text-xs text-stone-400">→</span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        )}
-      </main>
-    </div>
+  return (
+    <AppShell width="narrow">
+      <PageHeader
+        eyebrow="项目"
+        title="辅导项目"
+        description={isAdvisor ? "您作为导师负责的项目列表。" : "您参与的学生项目。"}
+        backHref="/mse/dashboard"
+        backLabel="工作台"
+        actions={
+          <Link href="/mse/projects/new" className="btn btn-primary">
+            创建项目
+          </Link>
+        }
+      />
+
+      {fetching ? (
+        <div className="card-surface p-12 text-center text-ink-muted">加载中…</div>
+      ) : !projects.length ? (
+        <div className="card-surface p-12 text-center text-ink-muted">
+          暂无项目，{" "}
+          <Link href="/mse/projects/new" className="text-vermillion hover:underline">
+            创建一个
+          </Link>
+        </div>
+      ) : (
+        <ul className="card-surface divide-y divide-ink/5 overflow-hidden">
+          {projects.map((p) => (
+            <li key={p.id}>
+              <Link href={`/mse/projects/${p.id}`} className="list-row">
+                <div>
+                  <p className="font-medium text-ink">{p.title}</p>
+                  <p className="mt-1 font-[family-name:var(--font-sans)] text-xs text-ink-faint">
+                    {projectStatusLabel(p.status)} · 第 {p.current_round} 轮
+                  </p>
+                </div>
+                <span className="text-vermillion">→</span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
+    </AppShell>
   );
 }

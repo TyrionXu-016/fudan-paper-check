@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/lib/auth";
 import { ApiError } from "@/lib/api";
+import { AuthShell } from "@/components/ui/AppShell";
 
 export default function RegisterInner() {
   const { register, user, loading } = useAuth();
@@ -45,33 +46,34 @@ export default function RegisterInner() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[radial-gradient(circle_at_top_left,_#ccfbf1,_transparent_35%),linear-gradient(180deg,#faf7f0,#f4f1ea)] px-6">
-      <form onSubmit={onSubmit} className="w-full max-w-md rounded-3xl border border-stone-200 bg-white p-8 shadow-xl">
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-teal-700">Fudan Paper Check</p>
-        <h1 className="mt-2 text-2xl font-semibold text-stone-900">注册</h1>
+    <AuthShell>
+      <form onSubmit={onSubmit} className="auth-panel">
+        <p className="ui-label">Fudan Paper Check</p>
+        <h1 className="display-title mt-2 text-3xl">注册</h1>
+        <p className="mt-2 text-sm text-ink-muted">创建导师或学生账号，参与论文辅导流程。</p>
 
-        <label className="mt-6 block text-sm text-stone-600">
+        <label className="mt-8 block font-[family-name:var(--font-sans)] text-sm text-ink-muted">
           姓名
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="mt-2 w-full rounded-xl border border-stone-200 px-4 py-3"
+            className="input-field"
             placeholder="可选"
           />
         </label>
 
-        <label className="mt-4 block text-sm text-stone-600">
+        <label className="mt-4 block font-[family-name:var(--font-sans)] text-sm text-ink-muted">
           邮箱
           <input
             type="email"
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="mt-2 w-full rounded-xl border border-stone-200 px-4 py-3"
+            className="input-field"
           />
         </label>
 
-        <label className="mt-4 block text-sm text-stone-600">
+        <label className="mt-4 block font-[family-name:var(--font-sans)] text-sm text-ink-muted">
           密码（至少 6 位）
           <input
             type="password"
@@ -79,39 +81,35 @@ export default function RegisterInner() {
             minLength={6}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="mt-2 w-full rounded-xl border border-stone-200 px-4 py-3"
+            className="input-field"
           />
         </label>
 
-        <label className="mt-4 block text-sm text-stone-600">
+        <label className="mt-4 block font-[family-name:var(--font-sans)] text-sm text-ink-muted">
           角色
           <select
             value={role}
             onChange={(e) => setRole(e.target.value as "advisor" | "student")}
-            className="mt-2 w-full rounded-xl border border-stone-200 px-4 py-3"
+            className="input-field"
           >
             <option value="advisor">导师</option>
             <option value="student">学生</option>
           </select>
         </label>
 
-        {error ? <p className="mt-4 text-sm text-red-600">{error}</p> : null}
+        {error ? <p className="mt-4 text-sm text-vermillion">{error}</p> : null}
 
-        <button
-          type="submit"
-          disabled={submitting}
-          className="mt-6 w-full rounded-xl bg-teal-700 py-3 font-medium text-white disabled:opacity-60"
-        >
+        <button type="submit" disabled={submitting} className="btn btn-primary mt-8 w-full py-3.5">
           {submitting ? "注册中…" : "创建账号"}
         </button>
 
-        <p className="mt-4 text-center text-sm text-stone-500">
+        <p className="mt-6 text-center font-[family-name:var(--font-sans)] text-sm text-ink-muted">
           已有账号？{" "}
-          <Link href="/login" className="text-teal-700 hover:underline">
+          <Link href="/login" className="text-vermillion hover:underline">
             登录
           </Link>
         </p>
       </form>
-    </div>
+    </AuthShell>
   );
 }

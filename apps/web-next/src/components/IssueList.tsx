@@ -4,10 +4,10 @@ import { useEffect, useState } from "react";
 import { issueFingerprint } from "@/lib/mse";
 import type { Issue } from "@/lib/types";
 
-const SEVERITY_CLASS: Record<string, string> = {
-  error: "border-l-red-500",
-  warning: "border-l-amber-500",
-  info: "border-l-blue-500",
+const SEVERITY_ROW: Record<string, string> = {
+  error: "issue-row--error",
+  warning: "issue-row--warning",
+  info: "issue-row--info",
 };
 
 type IssueListProps = {
@@ -26,23 +26,25 @@ export function IssueList({
   dismissLoading,
 }: IssueListProps) {
   if (!issues.length) {
-    return <div className="rounded-2xl bg-emerald-50 p-6 text-emerald-800">未发现问题。</div>;
+    return (
+      <div className="alert alert-info text-center font-medium">未发现问题，本轮格式门禁表现良好。</div>
+    );
   }
 
   return (
-    <div className="overflow-x-auto rounded-2xl bg-white ring-1 ring-stone-200/80">
-      <table className="min-w-full text-sm">
+    <div className="card-surface overflow-hidden">
+      <table className="issue-table">
         <thead>
-          <tr className="border-b border-stone-100 bg-stone-50 text-left text-xs text-stone-500">
-            <th className="px-4 py-3 font-medium">级别</th>
-            {showPage && <th className="px-4 py-3 font-medium">页码</th>}
-            <th className="px-4 py-3 font-medium">问题</th>
-            {showRuleRef && <th className="px-4 py-3 font-medium">规范引用</th>}
-            <th className="px-4 py-3 font-medium">修改建议</th>
-            {onDismiss && <th className="px-4 py-3 font-medium" />}
+          <tr>
+            <th>级别</th>
+            {showPage && <th>页码</th>}
+            <th>问题</th>
+            {showRuleRef && <th>规范引用</th>}
+            <th>修改建议</th>
+            {onDismiss && <th />}
           </tr>
         </thead>
-        <tbody className="divide-y divide-stone-100">
+        <tbody>
           {issues.map((issue, index) => (
             <IssueRow
               key={`${issue.code}-${issue.id ?? index}`}
@@ -83,33 +85,31 @@ function IssueRow({
     issue.page_line ?? (issue.page != null ? `第 ${issue.page} 页` : issue.line ? `约第 ${issue.line} 行` : "—");
 
   return (
-    <tr className={`border-l-4 ${SEVERITY_CLASS[issue.severity] ?? "border-l-stone-300"}`}>
-      <td className="px-4 py-3 align-top">
-        <code className="block text-xs text-stone-600">{issue.code}</code>
-        <span className="mt-1 inline-block rounded bg-stone-100 px-1.5 py-0.5 text-xs capitalize">
-          {issue.severity}
-        </span>
+    <tr className={SEVERITY_ROW[issue.severity] ?? "issue-row--info"}>
+      <td>
+        <code className="font-[family-name:var(--font-sans)] text-xs text-ink-muted">{issue.code}</code>
+        <span className="badge badge-neutral mt-2 capitalize">{issue.severity}</span>
       </td>
-      {showPage && <td className="whitespace-nowrap px-4 py-3 align-top text-stone-700">{pageLabel}</td>}
-      <td className="max-w-md px-4 py-3 align-top">
-        <p className="leading-6 text-stone-800">{issue.message}</p>
+      {showPage && (
+        <td className="whitespace-nowrap font-[family-name:var(--font-sans)] text-ink-muted">{pageLabel}</td>
+      )}
+      <td className="max-w-md">
+        <p className="leading-relaxed text-ink">{issue.message}</p>
         {issue.original_text && (
-          <p className="mt-1 line-clamp-2 text-xs text-stone-500">原文：{issue.original_text}</p>
+          <p className="mt-2 line-clamp-2 text-xs text-ink-faint">原文：{issue.original_text}</p>
         )}
       </td>
       {showRuleRef && (
-        <td className="max-w-[10rem] px-4 py-3 align-top text-xs text-stone-500">
-          {issue.rule_ref ?? "—"}
-        </td>
+        <td className="max-w-[10rem] text-xs text-ink-faint">{issue.rule_ref ?? "—"}</td>
       )}
-      <td className="max-w-xs px-4 py-3 align-top text-stone-600">{hint ?? "—"}</td>
+      <td className="max-w-xs text-ink-muted">{hint ?? "—"}</td>
       {onDismiss && fp && (
-        <td className="px-4 py-3 align-top">
+        <td>
           <button
             type="button"
             disabled={dismissLoading === fp}
             onClick={() => onDismiss(issue, fp)}
-            className="rounded-lg border border-stone-300 px-3 py-1 text-xs text-stone-600 hover:bg-stone-50 disabled:opacity-50"
+            className="btn btn-secondary text-xs"
           >
             {dismissLoading === fp ? "处理中…" : "忽略"}
           </button>

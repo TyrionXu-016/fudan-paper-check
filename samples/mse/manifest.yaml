@@ -6,11 +6,17 @@ tiers:
     tier: A
     primary: true
     subfield: traffic_prediction
-    note: 使用仓库 samples/钱超_maker.md 作为 fallback
+    school: 待填写学校
+    thesis_pdf: theses/tier-a-primary.pdf
+    spec_file: specs/tier-a-primary.md
+    note: 使用仓库 samples/钱超_maker.md 作为 fallback；M1-5 live 验收需替换为本地 CNKI/机构下载 PDF
     maker_fallback: samples/基于集成深度学习模型的公路隧道交通流预测_钱超_maker.md
     mineru_fallback: samples/基于集成深度学习模型的公路隧道交通流预测_钱超_mineru.md
   - id: tier-b-placeholder
     tier: B
     primary: false
     subfield: nlp
+    school: 待填写学校
+    thesis_pdf: theses/tier-b-placeholder.pdf
+    spec_file: specs/tier-b-placeholder.md
     note: 待补充本地 PDF 至 theses/

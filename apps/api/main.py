@@ -59,8 +59,10 @@ if (WEB_DIR / "static").exists():
 @app.on_event("startup")
 async def startup():
     from storage.db import init_db
+    from storage.users import user_store
 
     init_db()
+    user_store.migrate_json_once()
 
 
 @app.get("/health")

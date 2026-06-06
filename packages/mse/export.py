@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import io
 from collections import defaultdict
+from xml.sax.saxutils import escape
 
 from schema.models import Issue, IssueSeverity
 
@@ -91,6 +92,14 @@ def export_round_pdf_bytes(
     doc = SimpleDocTemplate(buffer, pagesize=A4, leftMargin=18 * mm, rightMargin=18 * mm)
     title_style = ParagraphStyle("title", fontName=font_name, fontSize=14, leading=18)
     body_style = ParagraphStyle("body", fontName=font_name, fontSize=9, leading=12)
+    anchor_style = ParagraphStyle(
+        "anchor",
+        fontName=font_name,
+        fontSize=9,
+        leading=12,
+        spaceBefore=8,
+        spaceAfter=2,
+    )
 
     story: list = []
     story.append(Paragraph(f"{project_title} — 第 {round_number} 轮审查意见", title_style))
@@ -134,5 +143,31 @@ def export_round_pdf_bytes(
         )
     )
     story.append(table)
+    story.append(Spacer(1, 10))
+
+    by_page: dict[int, list[Issue]] = defaultdict(list)
+    for issue in issues:
+        by_page[int(issue.page or 0)].append(issue)
+    for page in sorted(by_page):
+        anchor = f"page-{page}" if page > 0 else "page-unmapped"
+        heading = f"Issue Anchor: {anchor}"
+        if page > 0:
+            heading += f" / 第 {page} 页"
+        else:
+            heading += " / 未定位页码"
+        story.append(Paragraph(escape(heading), anchor_style))
+        for index, issue in enumerate(by_page[page], start=1):
+            hint = getattr(issue, "revision_hint", None) or issue.suggestion or "—"
+            rule_ref = getattr(issue, "rule_ref", None) or "—"
+            original = issue.original_text or "—"
+            parts = [
+                f"Issue {index}: {issue.code} [{issue.severity.value}]",
+                f"Message: {issue.message}",
+                f"Rule: {rule_ref}",
+                f"Original excerpt: {original[:300]}",
+                f"Revision hint: {str(hint)[:300]}",
+            ]
+            story.append(Paragraph("<br/>".join(escape(part) for part in parts), body_style))
+            story.append(Spacer(1, 3))
     doc.build(story)
     return buffer.getvalue()
