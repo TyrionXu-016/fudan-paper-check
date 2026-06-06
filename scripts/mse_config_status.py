@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -13,10 +14,10 @@ from mse.public_thesis import DEFAULT_PUBLIC_THESIS_PDF_PATH
 def main() -> int:
     root = Path(__file__).resolve().parents[1]
     parser = argparse.ArgumentParser(description="Check MSE local quasi-production configuration status.")
-    parser.add_argument("--manifest", default=str(DEFAULT_MANIFEST_PATH))
+    parser.add_argument("--manifest", default=os.environ.get("MSE_SAMPLE_MANIFEST", str(DEFAULT_MANIFEST_PATH)))
     parser.add_argument(
         "--public-pdf",
-        default=str(DEFAULT_PUBLIC_THESIS_PDF_PATH),
+        default=os.environ.get("MSE_PUBLIC_THESIS_PDF", str(DEFAULT_PUBLIC_THESIS_PDF_PATH)),
         help="Dartmouth public thesis PDF to validate. Defaults to samples/real_pdfs/public_cs_master_thesis.pdf.",
     )
     parser.add_argument(
@@ -32,16 +33,23 @@ def main() -> int:
         help="Only require the checks used by mse_acceptance_quasi_prod.sh.",
     )
     parser.add_argument("--skip-quasi-prod", action="store_true")
+    parser.add_argument("--skip-webhook", action="store_true")
     parser.add_argument("--json", action="store_true")
     args = parser.parse_args()
 
     env_files = [] if args.no_env_file else (args.env_file or [root / ".env"])
+    env = load_status_env(env_files)
+    require_webhook = (
+        not args.quasi_prod_only
+        and not args.skip_webhook
+        and env.get("MSE_REQUIRE_WEBHOOK_LIVE", "1").lower() not in {"0", "false", "no"}
+    )
     status = build_config_status(
         manifest_path=args.manifest,
         public_pdf_path=args.public_pdf,
-        env=load_status_env(env_files),
+        env=env,
         require_private_samples=not args.quasi_prod_only,
-        require_webhook=not args.quasi_prod_only,
+        require_webhook=require_webhook,
         require_quasi_prod=not args.skip_quasi_prod,
     )
 

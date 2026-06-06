@@ -22,6 +22,7 @@ def test_quasi_prod_acceptance_runs_config_preflight_before_docker_work(tmp_path
         **os.environ,
         "PATH": f"{fake_bin}{os.pathsep}{os.environ.get('PATH', '')}",
         "MSE_ACCEPTANCE_LOG_DIR": str(log_dir),
+        "MSE_PUBLIC_THESIS_PDF": str(tmp_path / "missing-public-thesis.pdf"),
         "LLM_API_KEY": "deepseek-secret",
         "NOTIFIER": "smtp",
         "SMTP_HOST": "smtp.example.invalid",

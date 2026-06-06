@@ -1,11 +1,16 @@
 from __future__ import annotations
 
 import json
+import os
+import subprocess
 from pathlib import Path
 
 from reportlab.pdfgen import canvas
 
 from mse.config_status import build_config_status
+
+
+ROOT = Path(__file__).resolve().parents[1]
 
 
 def _write_manifest(root: Path, *, create_files: bool) -> Path:
@@ -186,3 +191,38 @@ def test_config_status_rejects_invalid_webhook_url_without_leaking_secret(
     assert checks["webhook_live"].status == "config_required"
     assert "WEBHOOK_URL must be http or https" in " ".join(checks["webhook_live"].details)
     assert "secret-token" not in payload
+
+
+def test_config_status_env_can_defer_webhook_live(tmp_path: Path) -> None:
+    manifest = _write_manifest(tmp_path, create_files=True)
+    public_pdf = tmp_path / "public.pdf"
+    _write_public_thesis_pdf(public_pdf)
+    env = {
+        "MSE_REQUIRE_WEBHOOK_LIVE": "0",
+        "LLM_API_KEY": "deepseek-secret",
+        "NOTIFIER": "smtp",
+        "SMTP_HOST": "smtp.example.invalid",
+        "SMTP_TEST_STU": "student@example.invalid",
+        "PDF_CONVERTER_MODE": "docker",
+        "MSE_ALLOW_MOCK_FALLBACK": "0",
+    }
+
+    result = subprocess.run(
+        [
+            "python3",
+            "scripts/mse_config_status.py",
+            "--manifest",
+            str(manifest),
+            "--public-pdf",
+            str(public_pdf),
+        ],
+        cwd=ROOT,
+        env={**os.environ, **env},
+        text=True,
+        capture_output=True,
+        timeout=30,
+    )
+
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "webhook_live" not in result.stdout
+    assert "OK: MSE local configuration is ready" in result.stdout

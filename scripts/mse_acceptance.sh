@@ -4,6 +4,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 source "$ROOT/scripts/mse_acceptance_lib.sh"
 API="${API_BASE:-http://127.0.0.1:8000}"
+FRONTEND_BASE="${FRONTEND_BASE:-http://127.0.0.1:${FRONTEND_PORT:-3000}}"
 PASS=0
 FAIL=0
 
@@ -152,7 +153,7 @@ else
 fi
 
 # 10. Frontend
-FE=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:3000/mse/dashboard)
+FE=$(curl -s -o /dev/null -w "%{http_code}" "$FRONTEND_BASE/mse/dashboard")
 if [[ "$FE" == "200" ]]; then ok "前端 /mse/dashboard (HTTP 200)"; else bad "前端 /mse/dashboard (HTTP $FE)"; fi
 
 echo ""

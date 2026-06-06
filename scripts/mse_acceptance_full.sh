@@ -5,6 +5,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 source "$ROOT/scripts/mse_acceptance_lib.sh"
 API="${API_BASE:-http://127.0.0.1:8000}"
+FRONTEND_BASE="${FRONTEND_BASE:-http://127.0.0.1:${FRONTEND_PORT:-3000}}"
 
 echo "=== MSE 全流程验收 ==="
 echo "1) 运行基础验收脚本..."
@@ -155,7 +156,7 @@ else
   bad "扩展 pytest 套件"
 fi
 
-FE=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:3000/mse/invite/test-token)
+FE=$(curl -s -o /dev/null -w "%{http_code}" "$FRONTEND_BASE/mse/invite/test-token")
 if [[ "$FE" == "200" ]]; then ok "前端邀请页路由"; else bad "前端邀请页 (HTTP $FE)"; fi
 
 echo ""

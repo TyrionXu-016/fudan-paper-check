@@ -16,6 +16,42 @@ rand() { python3 -c "import uuid; print(uuid.uuid4().hex[:8])"; }
 
 ADV_EMAIL="${SMTP_TEST_ADV:-adv-smtp-$(rand)@local.test}"
 STU_EMAIL="${SMTP_TEST_STU:-${SMTP_USER:-stu-smtp-$(rand)@local.test}}"
+ACCEPTANCE_PASSWORD="${MSE_ACCEPTANCE_PASSWORD:-secret12}"
+
+auth_token() {
+  local email="$1"
+  local role="$2"
+  local name="$3"
+  local payload
+  payload="{\"email\":\"$email\",\"password\":\"$ACCEPTANCE_PASSWORD\",\"name\":\"$name\",\"role\":\"$role\"}"
+  local response
+  local code
+  response=$(mktemp)
+  code=$(curl -s -o "$response" -w "%{http_code}" -X POST "$API/v1/auth/register" \
+    -H "Content-Type: application/json" \
+    -d "$payload")
+  if [[ "$code" == "200" ]]; then
+    python3 -c "import sys,json; print(json.load(open(sys.argv[1]))['access_token'])" "$response"
+    rm -f "$response"
+    return 0
+  fi
+  if [[ "$code" == "409" ]]; then
+    code=$(curl -s -o "$response" -w "%{http_code}" -X POST "$API/v1/auth/login" \
+      -H "Content-Type: application/json" \
+      -d "{\"email\":\"$email\",\"password\":\"$ACCEPTANCE_PASSWORD\"}")
+    if [[ "$code" == "200" ]]; then
+      python3 -c "import sys,json; print(json.load(open(sys.argv[1]))['access_token'])" "$response"
+      rm -f "$response"
+      return 0
+    fi
+    rm -f "$response"
+    echo "CONFIG_REQUIRED: existing acceptance user $email cannot log in with MSE_ACCEPTANCE_PASSWORD" >&2
+    return 2
+  fi
+  rm -f "$response"
+  echo "FAIL: auth register $role (HTTP $code)" >&2
+  return 1
+}
 
 PYTHONPATH="$ROOT/packages:$ROOT/apps" SMTP_PREFLIGHT_TO="$STU_EMAIL" python3 - <<'PY'
 import asyncio
@@ -35,15 +71,8 @@ asyncio.run(main())
 PY
 echo "  ✓ SMTP preflight 已发送"
 
-ADV_TOKEN=$(curl -sf -X POST "$API/v1/auth/register" \
-  -H "Content-Type: application/json" \
-  -d "{\"email\":\"$ADV_EMAIL\",\"password\":\"secret12\",\"name\":\"A\",\"role\":\"advisor\"}" \
-  | python3 -c "import sys,json; print(json.load(sys.stdin)['access_token'])")
-
-STU_TOKEN=$(curl -sf -X POST "$API/v1/auth/register" \
-  -H "Content-Type: application/json" \
-  -d "{\"email\":\"$STU_EMAIL\",\"password\":\"secret12\",\"name\":\"S\",\"role\":\"student\"}" \
-  | python3 -c "import sys,json; print(json.load(sys.stdin)['access_token'])")
+ADV_TOKEN=$(auth_token "$ADV_EMAIL" "advisor" "A")
+STU_TOKEN=$(auth_token "$STU_EMAIL" "student" "S")
 
 PID=$(curl -sf -X POST "$API/v1/mse/projects" \
   -H "Authorization: Bearer $ADV_TOKEN" \

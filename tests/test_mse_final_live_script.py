@@ -14,6 +14,8 @@ def test_final_live_acceptance_stops_at_full_config_preflight(tmp_path: Path) ->
     env = {
         **os.environ,
         "MSE_ACCEPTANCE_LOG_DIR": str(log_dir),
+        "MSE_SAMPLE_MANIFEST": str(tmp_path / "missing-manifest.yaml"),
+        "MSE_PUBLIC_THESIS_PDF": str(tmp_path / "missing-public-thesis.pdf"),
         "LLM_API_KEY": "deepseek-secret",
         "WEBHOOK_URL": "https://example.invalid/secret-token",
         "NOTIFIER": "smtp",
@@ -89,4 +91,6 @@ def test_quasi_prod_extra_live_branch_runs_private_sample_and_webhook_stages() -
 
     assert 'MSE_ACCEPTANCE_EXTRA_LIVE:-0' in script
     assert 'run_stage "private sample live acceptance" python3 scripts/mse_acceptance_private_samples.py' in script
+    assert "MSE_REQUIRE_WEBHOOK_LIVE" in script
+    assert 'ok "webhook live acceptance deferred"' in script
     assert 'run_stage "webhook live acceptance" python3 scripts/mse_acceptance_webhook_live.py' in script

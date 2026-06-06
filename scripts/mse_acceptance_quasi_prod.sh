@@ -6,6 +6,8 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 RUN_ID="$(date +%Y%m%d%H%M%S)"
 LOG_DIR="${MSE_ACCEPTANCE_LOG_DIR:-/tmp/mse_quasi_prod_$RUN_ID}"
 API="${API_BASE:-http://127.0.0.1:8000}"
+FRONTEND_PORT="${FRONTEND_PORT:-3000}"
+FRONTEND_BASE="${FRONTEND_BASE:-http://127.0.0.1:$FRONTEND_PORT}"
 API_LOG="$LOG_DIR/api.log"
 FE_LOG="$LOG_DIR/frontend.log"
 API_PID=""
@@ -58,6 +60,8 @@ PY
   rm -f "$env_exports"
   export PYTHONPATH="${PYTHONPATH:-packages:apps}"
   export API_BASE="$API"
+  export FRONTEND_PORT="$FRONTEND_PORT"
+  export FRONTEND_BASE="$FRONTEND_BASE"
   export JOB_RUN_INLINE=1
   export PDF_CONVERTER_MODE=docker
   export MSE_ALLOW_MOCK_FALLBACK=0
@@ -112,7 +116,7 @@ wait_api() {
 
 wait_frontend() {
   for _ in $(seq 1 90); do
-    if curl -sf -o /dev/null "http://127.0.0.1:3000/mse/dashboard" >/dev/null 2>&1; then
+    if curl -sf -o /dev/null "$FRONTEND_BASE/mse/dashboard" >/dev/null 2>&1; then
       return 0
     fi
     sleep 2
@@ -128,6 +132,8 @@ ensure_port_free() {
 }
 
 export_env
+PUBLIC_THESIS_PDF="${MSE_PUBLIC_THESIS_PDF:-$ROOT/samples/real_pdfs/public_cs_master_thesis.pdf}"
+export MSE_PUBLIC_THESIS_PDF="$PUBLIC_THESIS_PDF"
 run_stage "config status" python3 scripts/mse_config_status.py --quasi-prod-only
 require_env LLM_API_KEY
 require_env SMTP_HOST
@@ -141,7 +147,6 @@ if ! docker info >/dev/null 2>&1; then
 fi
 
 PDF_LOG="$LOG_DIR/download_public_pdf.log"
-PUBLIC_THESIS_PDF="$ROOT/samples/real_pdfs/public_cs_master_thesis.pdf"
 if MINERU_TEST_PDF="$PUBLIC_THESIS_PDF" bash "$ROOT/scripts/download_mse_public_thesis_pdf.sh" >"$PDF_LOG" 2>&1; then
   export MINERU_TEST_PDF="$(tail -1 "$PDF_LOG")"
   [[ -f "$MINERU_TEST_PDF" ]] || fail "download public PDF" "$PDF_LOG"
@@ -158,14 +163,14 @@ run_stage "frontend typecheck" bash -c 'cd apps/web-next && npx tsc --noEmit'
 run_stage "frontend build" bash -c 'cd apps/web-next && npm run build'
 
 ensure_port_free 8000
-ensure_port_free 3000
+ensure_port_free "$FRONTEND_PORT"
 
 (cd "$ROOT" && python3 -m uvicorn api.main:app --host 127.0.0.1 --port 8000 --app-dir apps) >"$API_LOG" 2>&1 &
 API_PID="$!"
 wait_api || fail "API startup" "$API_LOG"
 ok "API startup"
 
-(cd "$ROOT/apps/web-next" && npm run dev -- --port 3000) >"$FE_LOG" 2>&1 &
+(cd "$ROOT/apps/web-next" && npm run dev -- --port "$FRONTEND_PORT") >"$FE_LOG" 2>&1 &
 FE_PID="$!"
 wait_frontend || fail "frontend startup" "$FE_LOG"
 ok "frontend startup"
@@ -177,7 +182,11 @@ run_stage "llm live acceptance" bash scripts/mse_acceptance_llm.sh
 run_stage "smtp live acceptance" bash scripts/mse_acceptance_smtp.sh
 if [[ "${MSE_ACCEPTANCE_EXTRA_LIVE:-0}" == "1" ]]; then
   run_stage "private sample live acceptance" python3 scripts/mse_acceptance_private_samples.py
-  run_stage "webhook live acceptance" python3 scripts/mse_acceptance_webhook_live.py
+  if [[ "${MSE_REQUIRE_WEBHOOK_LIVE:-1}" == "0" ]]; then
+    ok "webhook live acceptance deferred"
+  else
+    run_stage "webhook live acceptance" python3 scripts/mse_acceptance_webhook_live.py
+  fi
 fi
 
 echo "OK: local quasi-production acceptance"

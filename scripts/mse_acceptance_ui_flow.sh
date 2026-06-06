@@ -3,6 +3,7 @@
 set -euo pipefail
 
 API="${API_BASE:-http://127.0.0.1:8000}"
+FRONTEND_BASE="${FRONTEND_BASE:-http://127.0.0.1:${FRONTEND_PORT:-3000}}"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 PASS=0
 FAIL=0
@@ -148,7 +149,7 @@ REV_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
 
 # 前端路由
 for path in /mse/dashboard "/mse/invite/$GITOKEN" /mse/projects/new; do
-  CODE=$(curl -s -o /dev/null -w "%{http_code}" "http://127.0.0.1:3000${path}")
+  CODE=$(curl -s -o /dev/null -w "%{http_code}" "$FRONTEND_BASE${path}")
   [[ "$CODE" == "200" ]] && ok "前端 $path" || bad "前端 $path (HTTP $CODE)"
 done
 
