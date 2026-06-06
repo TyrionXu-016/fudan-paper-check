@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import os
 from pathlib import Path
+from urllib.parse import urlparse
 
 from parser.fusion import DualSourceFusionParser
 from parser.span_builder import build_spans
@@ -149,10 +150,15 @@ def _build_redis_settings():
     from arq.connections import RedisSettings
 
     redis_url = os.getenv("REDIS_URL", "redis://localhost:6379")
-    host_port = redis_url.split("://")[-1]
-    host = host_port.split(":")[0]
-    port = int(host_port.split(":")[-1] if ":" in host_port else 6379)
-    return RedisSettings(host=host, port=port)
+    parsed = urlparse(redis_url)
+    return RedisSettings(
+        host=parsed.hostname or "localhost",
+        port=parsed.port or 6379,
+        database=int((parsed.path or "/0").lstrip("/") or "0"),
+        username=parsed.username,
+        password=parsed.password,
+        ssl=parsed.scheme == "rediss",
+    )
 
 
 class WorkerSettings:

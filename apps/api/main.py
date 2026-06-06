@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -18,10 +19,18 @@ from api.routes.progress import router as progress_router
 from api.routes.result import router as result_router
 from api.routes.rule_bases import router as rule_bases_router
 from api.routes.tasks import router as tasks_router
+from rag.rule_index import build_all_indexes
 
 WEB_DIR = Path(__file__).resolve().parents[1] / "web"
 
-app = FastAPI(title="Fudan Paper Pre-Check API", version="0.4.0")
+
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    build_all_indexes()
+    yield
+
+
+app = FastAPI(title="Fudan Paper Pre-Check API", version="0.4.0", lifespan=lifespan)
 
 origins = os.getenv(
     "CORS_ORIGINS",

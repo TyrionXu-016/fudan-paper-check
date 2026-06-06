@@ -6,7 +6,7 @@ from collections import Counter
 
 from pydantic import BaseModel, Field
 
-from rag.rule_index import build_index, load_index
+from rag.rule_index import load_index
 
 
 class RuleSnippet(BaseModel):
@@ -77,9 +77,6 @@ def retrieve_rules(
     dimensions: list[str] | None = None,
 ) -> RetrieveRulesResponse:
     index = load_index(rule_base_id)
-    if index is None:
-        build_index(rule_base_id)
-        index = load_index(rule_base_id)
     if index is None:
         return RetrieveRulesResponse(rule_base_id=rule_base_id, query=query, results=[])
 

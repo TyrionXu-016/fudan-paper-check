@@ -144,6 +144,31 @@ def test_decisions_preview_export(auth_headers, tmp_path):
     assert download.status_code == 200
     assert download.content
 
+    span_issue = next((issue for issue in issues if issue.get("span_id")), None)
+    if not span_issue:
+        pytest.skip("no span-bound issue to verify export refresh")
+    custom_text = f"自定义导出内容-{uuid.uuid4().hex}"
+    put_custom = client.put(
+        f"/v1/tasks/{task_id}/decisions",
+        headers=auth_headers,
+        json={
+            "decisions": [
+                {
+                    "issue_id": span_issue["id"],
+                    "action": DecisionAction.CUSTOM.value,
+                    "custom_content": custom_text,
+                }
+            ]
+        },
+    )
+    assert put_custom.status_code == 200
+    refreshed = client.get(
+        f"/v1/tasks/{task_id}/export/md",
+        headers=auth_headers,
+    )
+    assert refreshed.status_code == 200
+    assert custom_text in refreshed.text
+
     pdf_export = client.post(
         f"/v1/tasks/{task_id}/export",
         headers=auth_headers,

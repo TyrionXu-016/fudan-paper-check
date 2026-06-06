@@ -28,7 +28,7 @@ def _find_span_for_issue(issue: Issue, spans: list[Span], doc: PaperDocument) ->
         for span in spans:
             if span.section_id in section_ids:
                 return span
-    return spans[0] if spans else None
+    return None
 
 
 def enrich_issues(

@@ -99,6 +99,27 @@ def test_check_upload_and_result(auth_headers, tmp_path):
     assert document["spans"]
 
 
+def test_check_upload_accepts_mineru_file(auth_headers, tmp_path):
+    maker = tmp_path / "sample.md"
+    maker.write_text("# 标题\n\n摘 要: 测试摘要内容。\n", encoding="utf-8")
+    mineru = tmp_path / "sample_mineru.md"
+    mineru.write_text("<table><tr><td>表格</td></tr></table>", encoding="utf-8")
+
+    with maker.open("rb") as main, mineru.open("rb") as aux:
+        upload = client.post(
+            "/v1/check",
+            headers=auth_headers,
+            files={
+                "file": ("sample.md", main, "text/markdown"),
+                "mineru_file": ("sample_mineru.md", aux, "text/markdown"),
+            },
+            data={"rule_base_id": "generic"},
+        )
+
+    assert upload.status_code == 202
+    assert upload.json()["data"]["task_id"]
+
+
 def test_result_not_ready(auth_headers, tmp_path):
     maker = tmp_path / "pending.md"
     maker.write_text("# t\n\n摘 要: x\n", encoding="utf-8")

@@ -50,11 +50,17 @@ def test_upload_and_list_jobs(auth_headers, tmp_path):
             headers=auth_headers,
             files={"file": ("sample.md", f, "text/markdown")},
             data={"journal_profile": "generic"},
-        )
+    )
     assert upload.status_code == 202
-    job_id = upload.json()["job_id"]
+    job_id = upload.json()["data"]["job_id"]
 
     listed = client.get("/v1/papers", headers=auth_headers)
     assert listed.status_code == 200
-    ids = [item["job_id"] for item in listed.json()]
+    body = listed.json()
+    assert body["code"] == 0
+    ids = [item["job_id"] for item in body["data"]]
     assert job_id in ids
+
+    detail = client.get(f"/v1/papers/{job_id}", headers=auth_headers)
+    assert detail.status_code == 200
+    assert detail.json()["data"]["job_id"] == job_id

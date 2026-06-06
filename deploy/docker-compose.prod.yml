@@ -21,7 +21,7 @@ services:
       PYTHONPATH: /app/packages:/app/apps
       REDIS_URL: redis://redis:6379
       JWT_SECRET: ${JWT_SECRET}
-      CORS_ORIGINS: ${CORS_ORIGINS:-*}
+      CORS_ORIGINS: ${CORS_ORIGINS:?set a comma-separated list of trusted frontend origins}
       PDF_CONVERTER_MODE: ${PDF_CONVERTER_MODE:-mock}
     volumes:
       - pager_data:/app/data

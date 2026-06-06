@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import os
 import uuid
+from inspect import isawaitable
 from pathlib import Path
+from urllib.parse import urlparse
 
 from fastapi import BackgroundTasks, UploadFile
 
@@ -26,21 +28,49 @@ CHECK_ALLOWED_SUFFIXES = {".pdf", ".docx", ".md", ".markdown"}
 PAPERS_ALLOWED_SUFFIXES = {".pdf", ".md", ".markdown"}
 
 
+def _build_redis_settings(redis_url: str):
+    from arq.connections import RedisSettings
+
+    parsed = urlparse(redis_url)
+    return RedisSettings(
+        host=parsed.hostname or "localhost",
+        port=parsed.port or 6379,
+        database=int((parsed.path or "/0").lstrip("/") or "0"),
+        username=parsed.username,
+        password=parsed.password,
+        ssl=parsed.scheme == "rediss",
+    )
+
+
+async def _close_redis(redis) -> None:
+    close = getattr(redis, "close", None)
+    if close:
+        result = close()
+        if isawaitable(result):
+            await result
+    wait_closed = getattr(redis, "wait_closed", None)
+    if wait_closed:
+        result = wait_closed()
+        if isawaitable(result):
+            await result
+
+
 async def _enqueue_or_run(coro_factory, *args) -> None:
     if os.getenv("JOB_RUN_INLINE", "").lower() in ("1", "true", "yes"):
         await coro_factory({}, *args)
         return
+    redis = None
     try:
         from arq import create_pool
-        from arq.connections import RedisSettings
 
         redis_url = os.getenv("REDIS_URL", "redis://localhost:6379")
-        host = redis_url.split("://")[-1].split(":")[0]
-        port = int(redis_url.split(":")[-1] or 6379)
-        redis = await create_pool(RedisSettings(host=host, port=port))
+        redis = await create_pool(_build_redis_settings(redis_url))
         await redis.enqueue_job(coro_factory.__name__, *args)
     except Exception:
         await coro_factory({}, *args)
+    finally:
+        if redis is not None:
+            await _close_redis(redis)
 
 
 def _suffix(filename: str) -> str:

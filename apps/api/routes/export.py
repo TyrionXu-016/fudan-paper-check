@@ -98,13 +98,12 @@ async def download_export(
             ERROR_UNSUPPORTED_FORMAT,
             f"unsupported export format: {fmt}",
             status_code=400,
-        )
+    )
 
     dest = _export_path(task_id, fmt)
-    if not dest.exists():
-        decisions = load_decisions(task_id)
-        preview = build_preview(record, decisions)
-        write_export_file(preview, fmt, dest)
+    decisions = load_decisions(task_id)
+    preview = build_preview(record, decisions)
+    write_export_file(preview, fmt, dest)
 
     media_types = {
         "docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",

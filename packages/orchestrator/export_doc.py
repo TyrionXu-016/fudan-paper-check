@@ -67,15 +67,36 @@ def export_pdf_bytes(preview: PreviewView) -> bytes:
         text = span.text
         if not text:
             continue
-        if y < 60:
-            page.showPage()
-            page.setFont(font_name, 11)
-            y = height - 50
-        page.drawString(50, y, text[:120])
-        y -= line_height
+        for line in _wrap_pdf_text(text, font_name, 11, width - 100):
+            if y < 60:
+                page.showPage()
+                page.setFont(font_name, 11)
+                y = height - 50
+            page.drawString(50, y, line)
+            y -= line_height
 
     page.save()
     return buffer.getvalue()
+
+
+def _wrap_pdf_text(text: str, font_name: str, font_size: int, max_width: float) -> list[str]:
+    try:
+        from reportlab.pdfbase import pdfmetrics
+    except ImportError as exc:
+        raise RuntimeError("reportlab is required for pdf export") from exc
+
+    lines: list[str] = []
+    current = ""
+    for char in text:
+        candidate = current + char
+        if current and pdfmetrics.stringWidth(candidate, font_name, font_size) > max_width:
+            lines.append(current)
+            current = char
+        else:
+            current = candidate
+    if current:
+        lines.append(current)
+    return lines or [""]
 
 
 def write_export_file(preview: PreviewView, fmt: str, dest: Path) -> Path:

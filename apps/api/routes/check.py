@@ -15,6 +15,7 @@ router = APIRouter(prefix="/v1", tags=["check"])
 async def submit_check(
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
+    mineru_file: UploadFile | None = File(None),
     rule_base_id: str = Form("generic"),
     user: User = Depends(get_current_user),
 ) -> ApiResponse[CheckSubmitResponse]:
@@ -22,6 +23,7 @@ async def submit_check(
         background_tasks,
         user_id=user.id,
         file=file,
+        mineru_file=mineru_file,
         rule_base_id=rule_base_id,
         allowed_suffixes=CHECK_ALLOWED_SUFFIXES,
     )
