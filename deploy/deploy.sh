@@ -43,7 +43,7 @@ EOF
 fi
 docker compose -f deploy/docker-compose.prod.yml --env-file deploy/.env.prod up -d --build
 docker compose -f deploy/docker-compose.prod.yml ps
-cp deploy/nginx/pager-api.tyrion.space.conf /etc/nginx/conf.d/pager-api.tyrion.space.conf
+cp deploy/nginx/paper-api.tyrion.space.conf /etc/nginx/conf.d/paper-api.tyrion.space.conf
 nginx -t
 systemctl reload nginx
 curl -sf http://127.0.0.1:18082/health

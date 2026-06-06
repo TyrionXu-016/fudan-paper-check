@@ -6,7 +6,7 @@
 |----|-----|
 | 路径 | `/opt/fudan-pager-check` |
 | API 容器端口 | `127.0.0.1:18082` → 8000 |
-| 域名（待 DNS） | `pager-api.tyrion.space` |
+| 域名 | `paper-api.tyrion.space` |
 
 ## 需要你配置的 DNS
 
@@ -14,16 +14,16 @@
 
 | 类型 | 主机记录 | 记录值 |
 |------|----------|--------|
-| A | `pager-api` | `114.55.139.240` |
+| A | `paper-api` | `114.55.139.240` |
 
-解析生效后访问：`http://pager-api.tyrion.space/v1/rule_bases`
+解析生效后访问：`http://paper-api.tyrion.space/v1/rule_bases`
 
 ## HTTPS（DNS 生效后执行）
 
 **前提**：权威 DNS 能解析到服务器 IP：
 
 ```bash
-dig @dns17.hichina.com pager-api.tyrion.space A
+dig @dns17.hichina.com paper-api.tyrion.space A
 # 应返回 114.55.139.240
 ```
 
@@ -37,10 +37,10 @@ ssh root@114.55.139.240
 或手动：
 
 ```bash
-certbot certonly --nginx -d pager-api.tyrion.space --non-interactive --agree-tos
-cp /opt/fudan-pager-check/deploy/nginx/pager-api.tyrion.space.conf /etc/nginx/conf.d/
+certbot certonly --nginx -d paper-api.tyrion.space --non-interactive --agree-tos
+cp /opt/fudan-pager-check/deploy/nginx/paper-api.tyrion.space.conf /etc/nginx/conf.d/
 nginx -t && systemctl reload nginx
-curl https://pager-api.tyrion.space/health
+curl https://paper-api.tyrion.space/health
 ```
 
 ## 常用运维命令
@@ -60,7 +60,7 @@ docker logs -f deploy-worker-1
 
 # 健康检查
 curl http://127.0.0.1:18082/health
-curl -H "Host: pager-api.tyrion.space" http://127.0.0.1/v1/rule_bases
+curl -H "Host: paper-api.tyrion.space" http://127.0.0.1/v1/rule_bases
 ```
 
 ## 环境变量
@@ -86,4 +86,4 @@ export DEPLOY_SSH_PASSWORD='你的服务器密码'
 - `deploy-worker-1` — arq 异步任务
 - `deploy-redis-1` — 任务队列（仅内网）
 
-Nginx 配置：`/etc/nginx/conf.d/pager-api.tyrion.space.conf`
+Nginx 配置：`/etc/nginx/conf.d/paper-api.tyrion.space.conf`
