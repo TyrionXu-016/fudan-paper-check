@@ -20,22 +20,29 @@ def now_iso() -> str:
 @dataclass
 class JobStore:
     jobs: dict[str, JobRecord] = field(default_factory=dict)
+    mtimes: dict[str, int] = field(default_factory=dict)
 
     def save(self, record: JobRecord) -> None:
         self.jobs[record.job_id] = record
         STORAGE.mkdir(parents=True, exist_ok=True)
-        (STORAGE / f"{record.job_id}.json").write_text(
+        path = STORAGE / f"{record.job_id}.json"
+        path.write_text(
             record.model_dump_json(indent=2), encoding="utf-8"
         )
+        self.mtimes[record.job_id] = path.stat().st_mtime_ns
 
     def get(self, job_id: str) -> JobRecord | None:
-        if job_id in self.jobs:
-            return self.jobs[job_id]
         path = STORAGE / f"{job_id}.json"
         if path.exists():
+            mtime = path.stat().st_mtime_ns
+            if job_id in self.jobs and self.mtimes.get(job_id) == mtime:
+                return self.jobs[job_id]
             record = JobRecord.model_validate_json(path.read_text(encoding="utf-8"))
             self.jobs[job_id] = record
+            self.mtimes[job_id] = mtime
             return record
+        if job_id in self.jobs:
+            return self.jobs[job_id]
         return None
 
     def list_all(self) -> list[JobRecord]:
