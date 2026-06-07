@@ -1,8 +1,14 @@
-data/
+/data/
+.env
+deploy/.env.prod
+.deploy_revision
 __pycache__/
 *.pyc
 .pytest_cache/
+.playwright-cli/
 .venv/
 *.egg-info/
 apps/web-next/node_modules/
 apps/web-next/.next/
+samples/real_pdfs/
+scripts/mse_local.env

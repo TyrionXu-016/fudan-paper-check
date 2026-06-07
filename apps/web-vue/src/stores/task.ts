@@ -31,7 +31,7 @@ export const useTaskStore = defineStore('task', () => {
   const uploadPct = ref(0)
   const detectStage = ref('FORMAT_CHECK')
   const detectPct = ref(35)
-  const ruleId = ref('pku-ug')
+  const ruleId = ref('fudan_university')
   const rules = ref<Rule[]>(RULES) // 默认 mock 列表；真后端模式下 loadRuleBases 替换
 
   const fileSizeText = computed(() => formatSize(fileSize.value))

@@ -1,0 +1,84 @@
+# Agent 流水线配置（复制为 config/agent_pipeline.yaml）
+
+# 环境变量 AGENT_MODE: rules | agents | hybrid
+
+stages:
+  - id: format_reference
+    agents:
+      - structure
+      - format
+      - reference
+    stage: FORMAT_CHECK
+    progress:
+      start: 30
+      end: 55
+      message: 正在检查格式与结构
+
+  - id: typo_grammar
+    agents:
+      - typo
+      - grammar
+    stage: TYPO_CHECK
+    progress:
+      start: 55
+      end: 70
+      message: 正在检查错别字与语病
+    llm:
+      batch_size: 8
+      timeout_sec: 30
+      max_retries: 2
+
+  - id: logic
+    agents:
+      - logic
+      - formula
+      - figure_table
+    stage: LOGIC_CHECK
+    progress:
+      start: 70
+      end: 85
+      message: 正在检查逻辑与一致性
+
+  - id: polish
+    agents:
+      - polish_academic
+      - polish_paragraph
+      - polish_sentence
+      - polish_en_abstract
+    stage: POLISH
+    optional: true          # 对应 POLISH_ENABLED=false 时跳过
+    progress:
+      start: 85
+      end: 95
+      message: 正在生成润色建议
+
+merge:
+  # 同 span_id 冲突时 issue_type 优先级（高在前）
+  type_priority:
+    - typo
+    - grammar
+    - logic_contradiction
+    - format
+    - reference
+    - paragraph_logic
+    - sentence_split
+    - polish
+
+hybrid:
+  # hybrid 模式下是否仍运行 packages/checks 四类 checker
+  run_legacy_checkers: true
+  # Agent-1 与 legacy checker 重复时 dedupe by code+span_id
+  dedupe_with_rules: true
+
+llm:
+  provider: openai_compatible
+  model: ${LLM_MODEL:-gpt-4o-mini}
+  base_url: ${LLM_BASE_URL:-}
+  api_key_env: LLM_API_KEY
+  temperature: 0.2
+  max_tokens: 4096
+
+rag:
+  rule_top_k: 5
+  doc_context_window: 2
+  doc_context_top_k: 8

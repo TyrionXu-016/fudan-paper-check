@@ -1,0 +1,45 @@
+name: Deploy frontend to Vercel
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "apps/web-vue/**"
+      - ".github/workflows/deploy-frontend-vercel.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-frontend-vercel
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Pull Vercel project settings
+        working-directory: apps/web-vue
+        run: npx vercel pull --yes --environment=production --token="${{ secrets.VERCEL_TOKEN }}"
+
+      - name: Build Vercel output
+        working-directory: apps/web-vue
+        run: npx vercel build --prod --token="${{ secrets.VERCEL_TOKEN }}"
+
+      - name: Deploy to Vercel
+        id: deploy
+        working-directory: apps/web-vue
+        run: |
+          set -o pipefail
+          npx vercel deploy --prebuilt --prod --token="${{ secrets.VERCEL_TOKEN }}" | tee /tmp/vercel-deploy.log
+          deployment_url="$(awk '/^https:\/\// { url = $0 } END { print url }' /tmp/vercel-deploy.log)"
+          printf 'deployment_url=%s\n' "$deployment_url" >> "$GITHUB_OUTPUT"
+
+      - name: Assign custom domain
+        working-directory: apps/web-vue
+        run: npx vercel alias set "${{ steps.deploy.outputs.deployment_url }}" paper.tyrion.space --scope open-star --token="${{ secrets.VERCEL_TOKEN }}"

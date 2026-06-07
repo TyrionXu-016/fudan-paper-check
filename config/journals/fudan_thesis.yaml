@@ -1,0 +1,360 @@
+# 复旦大学博士、硕士学位论文规范（2024.10）
+# 来源：论文规范数据清洗代码/cleaned_output.md（L1-L73）
+# rule_base_id: fudan_thesis
+
+id: fudan_thesis
+name: 复旦大学博士、硕士学位论文规范
+version: "2024.10"
+school: 复旦大学
+source:
+  file: 论文规范数据清洗代码/cleaned_output.md
+  converted_at: "2026-05-26"
+
+summary:
+  cover: |
+    学位论文封面使用云彩纸：博士淡棕色，硕士淡蓝绿色。
+    封一须含学校代码10246、学号、题目等11项；学术/专业/涉密封面标注要求不同；
+    封三须签署独创性声明与使用授权声明；书脊须印论文题目、作者姓名、复旦大学研究生院。
+  format: |
+    印刷本按 Word 格式 A4 纸（页面设置按 Word 默认值）编排打印；
+    正文宋体、小四号、字符间距标准、行距20磅；双面打印；
+    线装或热胶装订，不得使用钉子装订。
+    电子版须为单个 word 或 pdf 文件，且不得加密。
+  structure: |
+    印刷本须含扉页（指导小组成员名单）、目录、中英文摘要（含关键词与中图分类号）、
+    引言（前言）、正文、参考文献、后记或致谢；
+    电子版须含封面、上述内容，以及封三签署的独创性声明与使用授权声明。
+  reference: |
+    全文参考文献编排格式须符合国家标准 GB/T 7714—2015
+    《信息与文献：参考文献著录规则》。
+  word_count: |
+    文科硕士论文一般不少于3万字，文科博士论文一般不少于10万字；
+    理科、医科及专业学位论文字数按相关专业规定执行。
+
+required_sections:
+  print:
+    - id: title_page
+      title: 扉页
+      note: 含指导小组成员名单
+    - id: toc
+      title: 目录
+    - id: abstract_zh
+      title: 中文摘要
+      fields: [关键词, 中图分类号]
+    - id: abstract_en
+      title: 英文摘要
+      fields: [关键词, 中图分类号]
+    - id: introduction
+      title: 引言
+      aliases: [前言]
+    - id: body
+      title: 正文
+    - id: references
+      title: 参考文献
+    - id: acknowledgement
+      title: 后记
+      aliases: [致谢]
+  electronic:
+    - id: cover
+      title: 论文封面
+      note: 参考学校标准样本
+    - id: title_page
+      title: 扉页
+    - id: toc
+      title: 目录
+    - id: abstract_zh
+      title: 中文摘要
+      fields: [关键词, 中图分类号]
+    - id: abstract_en
+      title: 英文摘要
+      fields: [关键词, 中图分类号]
+    - id: introduction
+      title: 引言
+      aliases: [前言]
+    - id: body
+      title: 正文
+    - id: references
+      title: 参考文献
+    - id: acknowledgement
+      title: 后记
+      aliases: [致谢]
+    - id: declaration
+      title: 论文独创性声明与使用授权声明
+      note: 封三签署，附件二
+
+warnings:
+  cover_paper_color_doctor:
+    dimension: format
+    text: 博士学位论文封面使用淡棕色云彩纸。
+  cover_paper_color_master:
+    dimension: format
+    text: 硕士学位论文封面使用淡蓝绿色云彩纸。
+  word_count_science:
+    dimension: format
+    text: 理科、医科论文字数根据各专业实际情况确定。
+  word_count_professional:
+    dimension: format
+    text: 专业学位论文字数参照全国和学校专业学位研究生教育指导委员会相关规定。
+  footnote_exception:
+    dimension: format
+    text: 如所在学科有特殊需要，也可适当采用脚注。
+
+patterns:
+  cover_school_code:
+    dimension: format
+    operator: must
+    target: 封面
+    regex: "10246"
+    message: 封面须含学校代码 10246
+  reference_gbt7714:
+    dimension: reference
+    operator: must
+    target: 参考文献
+    regex: "GB/T\\s*7714"
+    message: 参考文献须符合 GB/T 7714—2015
+  binding_forbid_staple:
+    dimension: format
+    operator: forbid
+    target: 装订方式
+    regex: "钉子"
+    message: 不得使用钉子装订
+
+rules:
+  # ── 一、论文封面制作要求 ──
+
+  - id: cover_paper_material
+    dimension: format
+    operator: must
+    path: 论文封面制作要求 > 封面纸张
+    target: 学位论文封面
+    scope: 印刷本
+    text: |
+      学位论文封面使用云彩纸。博士学位论文封面颜色为淡棕色，
+      硕士学位论文封面颜色为淡蓝绿色。
+
+  - id: cover_fields_11
+    dimension: format
+    operator: must
+    path: 论文封面制作要求 > 封一内容
+    target: 论文封面（封一）
+    scope: 印刷本
+    text: |
+      论文封面（封一）须包含以下11项内容：
+      (1) 学校代码（10246）；
+      (2) 学号；
+      (3) 同等学力人员或英文项目（非同等学力人员、非英文项目的学生请在封面上删除此项内容）；
+      (4) 学校名称（复旦大学）；
+      (5) 学位论文的类别；
+      (6) 30个汉字以内的论文题目，及相应的英文题目（外语专业如非中文撰写，须同时有中文题目）；
+      (7) 院系（规范正式的）名称；
+      (8) 学科专业；
+      (9) 姓名（留学生姓名须与护照英文名一致）；
+      (10) 指导教师；
+      (11) 完成日期。
+
+  - id: cover_academic_label
+    dimension: format
+    operator: must
+    path: 论文封面制作要求 > 学术学位
+    target: 学术学位论文封面
+    scope: 印刷本
+    text: |
+      对于学术学位论文，须在论文封面「复旦大学XX学位论文」的下面
+      注明「（学术学位）」字样。
+
+  - id: cover_professional_label
+    dimension: format
+    operator: must
+    path: 论文封面制作要求 > 专业学位
+    target: 专业学位论文封面
+    scope: 印刷本
+    text: |
+      对于专业学位论文，须在论文封面「复旦大学XX学位论文」的下面
+      注明「（专业学位）」字样。
+
+  - id: cover_secret_label
+    dimension: format
+    operator: must
+    path: 论文封面制作要求 > 涉密论文
+    target: 涉密学位论文封面
+    scope: 印刷本
+    text: |
+      对于涉密学位论文，其密级及保密年限由学校相关保密部门审核认定后，
+      必须在论文封面右上角、学校代码的上方标注，如「密级：秘密五年」。
+
+  - id: cover_format_sample
+    dimension: format
+    operator: must
+    path: 论文封面制作要求 > 封一格式
+    target: 论文封面（封一）
+    scope: 印刷本
+    text: |
+      论文封面（封一）的格式须严格按学校标准样本（附件一）制作。
+
+  - id: cover_back_declaration
+    dimension: structure
+    operator: must
+    path: 论文封面制作要求 > 封三
+    target: 论文封面（封三）
+    scope: 印刷本
+    text: |
+      论文封面（封三）须打印并签署「学位论文独创性声明」和
+      「学位论文使用授权声明」（附件二）。
+
+  - id: spine_content
+    dimension: format
+    operator: must
+    path: 论文封面制作要求 > 书脊
+    target: 论文书脊
+    scope: 印刷本
+    text: |
+      论文书脊上须印：论文题目、作者姓名、复旦大学研究生院。
+
+  # ── 二、论文内容编排要求 ──
+
+  - id: body_layout_font
+    dimension: format
+    operator: must
+    path: 论文内容编排要求 > 版式
+    target: 正文
+    scope: 印刷本
+    text: |
+      论文统一按 Word 格式 A4 纸（「页面设置」按 Word 默认值）编排、打印、制作。
+      正文内容：字体宋体、字号小四号、字符间距标准、行距20磅。
+
+  - id: reference_gbt7714
+    dimension: reference
+    operator: must
+    path: 论文内容编排要求 > 参考文献
+    target: 参考文献
+    scope: 全文
+    text: |
+      全文参考文献一览，各类参考文献编排格式须符合国家标准
+      GB/T 7714—2015《信息与文献：参考文献著录规则》。
+
+  - id: footnote_master
+    dimension: format
+    operator: must
+    path: 论文内容编排要求 > 注释位置
+    target: 硕士学位论文
+    scope: 印刷本
+    text: 硕士学位论文采用篇末注。
+
+  - id: footnote_doctor
+    dimension: format
+    operator: must
+    path: 论文内容编排要求 > 注释位置
+    target: 博士学位论文
+    scope: 印刷本
+    text: 博士学位论文采用章末注。
+
+  - id: word_count_master_arts
+    dimension: format
+    operator: min
+    path: 论文内容编排要求 > 论文字数
+    target: 文科硕士学位论文
+    scope: 印刷本
+    value: 30000
+    unit: 字
+    text: 文科硕士论文一般不少于3万字。
+
+  - id: word_count_doctor_arts
+    dimension: format
+    operator: min
+    path: 论文内容编排要求 > 论文字数
+    target: 文科博士学位论文
+    scope: 印刷本
+    value: 100000
+    unit: 字
+    text: 文科博士论文一般不少于10万字。
+
+  # ── 三、论文的打印和装订要求 ──
+
+  - id: print_duplex
+    dimension: format
+    operator: must
+    path: 论文打印和装订要求
+    target: 印刷本
+    scope: 印刷本
+    text: 论文要求双面打印。
+
+  - id: binding_forbid_staple
+    dimension: format
+    operator: forbid
+    path: 论文打印和装订要求
+    target: 装订方式
+    scope: 印刷本
+    text: 论文必须用线装或热胶装订，不能使用钉子装订。
+
+  # ── 四、电子版论文规范 ──
+
+  - id: electronic_single_file
+    dimension: format
+    operator: must
+    path: 电子版论文规范 > 内容要求
+    target: 电子版论文
+    scope: 电子版
+    text: 电子版论文应为一个文件，包含封面、扉页、目录、中英文摘要、引言、正文、参考文献、后记或致谢，以及封三签署的声明等内容。
+
+  - id: electronic_clc_required
+    dimension: format
+    operator: must
+    path: 电子版论文规范 > 中文摘要
+    target: 中文摘要
+    scope: 电子版
+    text: |
+      电子版中文摘要须标注「中图分类号」，
+      具体类目请查询复旦大学图书馆网站。
+
+  - id: electronic_reference_gbt7714
+    dimension: reference
+    operator: must
+    path: 电子版论文规范 > 参考文献
+    target: 参考文献
+    scope: 电子版
+    text: |
+      电子版全文参考文献编排格式须符合国家标准
+      GB/T 7714—2015《信息与文献：参考文献著录规则》。
+
+  - id: electronic_declaration
+    dimension: structure
+    operator: must
+    path: 电子版论文规范 > 封三声明
+    target: 论文封三
+    scope: 电子版
+    text: |
+      电子版须包含封三签署的「论文独创性声明」和「论文使用授权声明」（附件二）。
+
+  - id: electronic_file_format
+    dimension: format
+    operator: must
+    path: 电子版论文规范 > 格式要求
+    target: 电子版文件
+    scope: 电子版
+    text: 电子版论文的文件类型格式为 word 或 pdf，且不得加密。
+
+  - id: submit_print_copy
+    dimension: format
+    operator: must
+    path: 电子版论文规范 > 学位论文提交
+    target: 公开学位论文印刷本
+    scope: 提交
+    text: |
+      公开学位论文的印刷本：根据学位办每学期下发的《学位申请、审核程序》，
+      通过院系集中方式，分别向研究生院和图书馆提交。
+
+  - id: submit_electronic_copy
+    dimension: format
+    operator: must
+    path: 电子版论文规范 > 学位论文提交
+    target: 公开学位论文电子版
+    scope: 提交
+    text: 公开学位论文的电子版由论文作者直接提交图书馆审核验收。
+
+  - id: submit_secret_copy
+    dimension: format
+    operator: must
+    path: 电子版论文规范 > 学位论文提交
+    target: 涉密学位论文
+    scope: 提交
+    text: 涉密学位论文根据涉密论文的管理办法，向相关部门提交保存。

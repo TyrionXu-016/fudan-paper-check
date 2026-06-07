@@ -12,6 +12,14 @@
 - `apps/web` — 旧版静态页（API 托管，可选）
 - `apps/api` — FastAPI 异步任务接口 + JWT 认证
 
+## 实施计划
+
+后端 API、Agent 流水线、模型微调的分模块计划见 [`docs/plans/`](docs/plans/README.md)。
+
+- [后端 API 实施计划](docs/plans/backend-api.md)（当前优先）
+- [Agent 流水线计划](docs/plans/agent-pipeline.md)
+- [模型微调计划](docs/plans/model-finetuning.md)
+
 ## 快速开始
 
 ### 1. 后端 API
@@ -118,7 +126,13 @@ export LLM_MODEL=gpt-4o-mini
 
 ## 期刊模板
 
+`config/journals/fudan_thesis.yaml` — 复旦大学博士、硕士学位论文规范（2024.10）
+
+`config/journals/fudan_university.yaml` — 复旦大学论文规范（预检摘要）
+
 `config/journals/scut_natural_science.yaml` — 华南理工大学学报（自然科学版）
+
+`config/journals/generic.yaml` — 通用中文学术论文
 
 ## 样本数据
 

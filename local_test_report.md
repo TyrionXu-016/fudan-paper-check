@@ -1,0 +1,376 @@
+# 论文预检查报告
+
+**论文标题：** 基于集成深度学习模型的公路隧道交通流预测
+**任务 ID：** local-test-job
+
+## 解析质量
+- 融合得分：0.7
+- Maker 得分：1.0
+- MinerU 得分：0.0
+- ⚠ mineru 正文存在大量 OCR 缺失，已采用 maker 作为主文本源
+- ⚠ 表格优先采用 mineru HTML 结构
+
+## 摘要
+- 错误：1
+- 警告：120
+- 提示：7
+
+## 问题列表
+
+- **[warning]** `FORMAT_DOI_PATTERN`: DOI 格式与期刊模板不完全匹配
+  - 证据：10. 12141/j. issn. 1000-565X. 250274
+规范依据: 摘要、关键词、中图分类号、DOI、表题图题与公式编号等学报格式
+- **[warning]** `FORMAT_OCR_NUMBER_SPACE`: 数值中可能存在 OCR 多余空格
+  - 建议：检查并合并数字中的空格，如 42. 29 → 42.29
+  - 证据：10. 12141
+- **[warning]** `FORMAT_OCR_NUMBER_SPACE`: 数值中可能存在 OCR 多余空格
+  - 建议：检查并合并数字中的空格，如 42. 29 → 42.29
+  - 证据：42. 29
+- **[warning]** `FORMAT_OCR_NUMBER_SPACE`: 数值中可能存在 OCR 多余空格
+  - 建议：检查并合并数字中的空格，如 42. 29 → 42.29
+  - 证据：5. 66
+- **[warning]** `FORMAT_OCR_NUMBER_SPACE`: 数值中可能存在 OCR 多余空格
+  - 建议：检查并合并数字中的空格，如 42. 29 → 42.29
+  - 证据：4. 18
+- **[warning]** `FORMAT_OCR_NUMBER_SPACE`: 数值中可能存在 OCR 多余空格
+  - 建议：检查并合并数字中的空格，如 42. 29 → 42.29
+  - 证据：1. 06
+- **[warning]** `FORMAT_OCR_NUMBER_SPACE`: 数值中可能存在 OCR 多余空格
+  - 建议：检查并合并数字中的空格，如 42. 29 → 42.29
+  - 证据：64. 28
+- **[warning]** `FORMAT_OCR_NUMBER_SPACE`: 数值中可能存在 OCR 多余空格
+  - 建议：检查并合并数字中的空格，如 42. 29 → 42.29
+  - 证据：7. 84
+- **[warning]** `FORMAT_OCR_NUMBER_SPACE`: 数值中可能存在 OCR 多余空格
+  - 建议：检查并合并数字中的空格，如 42. 29 → 42.29
+  - 证据：6. 57
+- **[warning]** `FORMAT_OCR_NUMBER_SPACE`: 数值中可能存在 OCR 多余空格
+  - 建议：检查并合并数字中的空格，如 42. 29 → 42.29
+  - 证据：1. 08
+- **[warning]** `FORMAT_OCR_NUMBER_SPACE`: 数值中可能存在 OCR 多余空格
+  - 建议：检查并合并数字中的空格，如 42. 29 → 42.29
+  - 证据：34. 20
+- **[warning]** `FORMAT_OCR_NUMBER_SPACE`: 数值中可能存在 OCR 多余空格
+  - 建议：检查并合并数字中的空格，如 42. 29 → 42.29
+  - 证据：36. 37
+- **[warning]** `FORMAT_OCR_NUMBER_SPACE`: 数值中可能存在 OCR 多余空格
+  - 建议：检查并合并数字中的空格，如 42. 29 → 42.29
+  - 证据：26. 97
+- **[warning]** `FORMAT_OCR_NUMBER_SPACE`: 数值中可能存在 OCR 多余空格
+  - 建议：检查并合并数字中的空格，如 42. 29 → 42.29
+  - 证据：35. 00
+- **[warning]** `FORMAT_OCR_NUMBER_SPACE`: 数值中可能存在 OCR 多余空格
+  - 建议：检查并合并数字中的空格，如 42. 29 → 42.29
+  - 证据：1. 0
+- **[warning]** `FORMAT_OCR_NUMBER_SPACE`: 数值中可能存在 OCR 多余空格
+  - 建议：检查并合并数字中的空格，如 42. 29 → 42.29
+  - 证据：1. 5
+- **[warning]** `FORMAT_OCR_NUMBER_SPACE`: 数值中可能存在 OCR 多余空格
+  - 建议：检查并合并数字中的空格，如 42. 29 → 42.29
+  - 证据：1. 0
+- **[warning]** `FORMAT_OCR_NUMBER_SPACE`: 数值中可能存在 OCR 多余空格
+  - 建议：检查并合并数字中的空格，如 42. 29 → 42.29
+  - 证据：1. 5
+- **[warning]** `FORMAT_OCR_NUMBER_SPACE`: 数值中可能存在 OCR 多余空格
+  - 建议：检查并合并数字中的空格，如 42. 29 → 42.29
+  - 证据：3. 0
+- **[warning]** `FORMAT_OCR_NUMBER_SPACE`: 数值中可能存在 OCR 多余空格
+  - 建议：检查并合并数字中的空格，如 42. 29 → 42.29
+  - 证据：4. 0
+- **[warning]** `FORMAT_OCR_NUMBER_SPACE`: 数值中可能存在 OCR 多余空格
+  - 建议：检查并合并数字中的空格，如 42. 29 → 42.29
+  - 证据：389. 14
+- **[warning]** `FORMAT_OCR_NUMBER_SPACE`: 数值中可能存在 OCR 多余空格
+  - 建议：检查并合并数字中的空格，如 42. 29 → 42.29
+  - 证据：408. 52
+- **[warning]** `FORMAT_OCR_NUMBER_SPACE`: 数值中可能存在 OCR 多余空格
+  - 建议：检查并合并数字中的空格，如 42. 29 → 42.29
+  - 证据：271. 74
+- **[warning]** `FORMAT_OCR_NUMBER_SPACE`: 数值中可能存在 OCR 多余空格
+  - 建议：检查并合并数字中的空格，如 42. 29 → 42.29
+  - 证据：147. 65
+- **[warning]** `FORMAT_OCR_NUMBER_SPACE`: 数值中可能存在 OCR 多余空格
+  - 建议：检查并合并数字中的空格，如 42. 29 → 42.29
+  - 证据：0. 69
+- **[warning]** `FORMAT_OCR_NUMBER_SPACE`: 数值中可能存在 OCR 多余空格
+  - 建议：检查并合并数字中的空格，如 42. 29 → 42.29
+  - 证据：0. 59
+- **[warning]** `FORMAT_OCR_NUMBER_SPACE`: 数值中可能存在 OCR 多余空格
+  - 建议：检查并合并数字中的空格，如 42. 29 → 42.29
+  - 证据：0. 12
+- **[warning]** `FORMAT_OCR_NUMBER_SPACE`: 数值中可能存在 OCR 多余空格
+  - 建议：检查并合并数字中的空格，如 42. 29 → 42.29
+  - 证据：0. 83
+- **[warning]** `FORMAT_OCR_NUMBER_SPACE`: 数值中可能存在 OCR 多余空格
+  - 建议：检查并合并数字中的空格，如 42. 29 → 42.29
+  - 证据：0. 02
+- **[warning]** `FORMAT_OCR_NUMBER_SPACE`: 数值中可能存在 OCR 多余空格
+  - 建议：检查并合并数字中的空格，如 42. 29 → 42.29
+  - 证据：0. 53
+- **[warning]** `FORMAT_OCR_NUMBER_SPACE`: 数值中可能存在 OCR 多余空格
+  - 建议：检查并合并数字中的空格，如 42. 29 → 42.29
+  - 证据：7. 33
+- **[warning]** `FORMAT_OCR_NUMBER_SPACE`: 数值中可能存在 OCR 多余空格
+  - 建议：检查并合并数字中的空格，如 42. 29 → 42.29
+  - 证据：7. 47
+- **[warning]** `FORMAT_OCR_NUMBER_SPACE`: 数值中可能存在 OCR 多余空格
+  - 建议：检查并合并数字中的空格，如 42. 29 → 42.29
+  - 证据：3. 26
+- **[warning]** `FORMAT_OCR_NUMBER_SPACE`: 数值中可能存在 OCR 多余空格
+  - 建议：检查并合并数字中的空格，如 42. 29 → 42.29
+  - 证据：2. 36
+- **[warning]** `FORMAT_OCR_NUMBER_SPACE`: 数值中可能存在 OCR 多余空格
+  - 建议：检查并合并数字中的空格，如 42. 29 → 42.29
+  - 证据：1. 37
+- **[warning]** `FORMAT_OCR_NUMBER_SPACE`: 数值中可能存在 OCR 多余空格
+  - 建议：检查并合并数字中的空格，如 42. 29 → 42.29
+  - 证据：4. 27
+- **[warning]** `FORMAT_OCR_NUMBER_SPACE`: 数值中可能存在 OCR 多余空格
+  - 建议：检查并合并数字中的空格，如 42. 29 → 42.29
+  - 证据：33. 99
+- **[warning]** `FORMAT_OCR_NUMBER_SPACE`: 数值中可能存在 OCR 多余空格
+  - 建议：检查并合并数字中的空格，如 42. 29 → 42.29
+  - 证据：35. 44
+- **[warning]** `FORMAT_OCR_NUMBER_SPACE`: 数值中可能存在 OCR 多余空格
+  - 建议：检查并合并数字中的空格，如 42. 29 → 42.29
+  - 证据：46. 82
+- **[warning]** `FORMAT_OCR_NUMBER_SPACE`: 数值中可能存在 OCR 多余空格
+  - 建议：检查并合并数字中的空格，如 42. 29 → 42.29
+  - 证据：13. 06
+- **[warning]** `FORMAT_OCR_NUMBER_SPACE`: 数值中可能存在 OCR 多余空格
+  - 建议：检查并合并数字中的空格，如 42. 29 → 42.29
+  - 证据：1. 70
+- **[warning]** `FORMAT_OCR_NUMBER_SPACE`: 数值中可能存在 OCR 多余空格
+  - 建议：检查并合并数字中的空格，如 42. 29 → 42.29
+  - 证据：42. 29
+- **[warning]** `FORMAT_OCR_NUMBER_SPACE`: 数值中可能存在 OCR 多余空格
+  - 建议：检查并合并数字中的空格，如 42. 29 → 42.29
+  - 证据：5. 66
+- **[warning]** `FORMAT_OCR_NUMBER_SPACE`: 数值中可能存在 OCR 多余空格
+  - 建议：检查并合并数字中的空格，如 42. 29 → 42.29
+  - 证据：4. 18
+- **[warning]** `FORMAT_OCR_NUMBER_SPACE`: 数值中可能存在 OCR 多余空格
+  - 建议：检查并合并数字中的空格，如 42. 29 → 42.29
+  - 证据：1. 06
+- **[warning]** `FORMAT_OCR_NUMBER_SPACE`: 数值中可能存在 OCR 多余空格
+  - 建议：检查并合并数字中的空格，如 42. 29 → 42.29
+  - 证据：64. 28
+- **[warning]** `FORMAT_OCR_NUMBER_SPACE`: 数值中可能存在 OCR 多余空格
+  - 建议：检查并合并数字中的空格，如 42. 29 → 42.29
+  - 证据：7. 84
+- **[warning]** `FORMAT_OCR_NUMBER_SPACE`: 数值中可能存在 OCR 多余空格
+  - 建议：检查并合并数字中的空格，如 42. 29 → 42.29
+  - 证据：6. 57
+- **[warning]** `FORMAT_OCR_NUMBER_SPACE`: 数值中可能存在 OCR 多余空格
+  - 建议：检查并合并数字中的空格，如 42. 29 → 42.29
+  - 证据：1. 08
+- **[warning]** `FORMAT_OCR_NUMBER_SPACE`: 数值中可能存在 OCR 多余空格
+  - 建议：检查并合并数字中的空格，如 42. 29 → 42.29
+  - 证据：6. 36
+- **[warning]** `FORMAT_OCR_NUMBER_SPACE`: 数值中可能存在 OCR 多余空格
+  - 建议：检查并合并数字中的空格，如 42. 29 → 42.29
+  - 证据：5. 90
+- **[warning]** `FORMAT_OCR_NUMBER_SPACE`: 数值中可能存在 OCR 多余空格
+  - 建议：检查并合并数字中的空格，如 42. 29 → 42.29
+  - 证据：61. 80
+- **[warning]** `FORMAT_OCR_NUMBER_SPACE`: 数值中可能存在 OCR 多余空格
+  - 建议：检查并合并数字中的空格，如 42. 29 → 42.29
+  - 证据：12. 87
+- **[warning]** `FORMAT_OCR_NUMBER_SPACE`: 数值中可能存在 OCR 多余空格
+  - 建议：检查并合并数字中的空格，如 42. 29 → 42.29
+  - 证据：38. 98
+- **[warning]** `FORMAT_OCR_NUMBER_SPACE`: 数值中可能存在 OCR 多余空格
+  - 建议：检查并合并数字中的空格，如 42. 29 → 42.29
+  - 证据：7. 58
+- **[warning]** `FORMAT_OCR_NUMBER_SPACE`: 数值中可能存在 OCR 多余空格
+  - 建议：检查并合并数字中的空格，如 42. 29 → 42.29
+  - 证据：48. 69
+- **[warning]** `FORMAT_OCR_NUMBER_SPACE`: 数值中可能存在 OCR 多余空格
+  - 建议：检查并合并数字中的空格，如 42. 29 → 42.29
+  - 证据：8. 88
+- **[warning]** `FORMAT_OCR_NUMBER_SPACE`: 数值中可能存在 OCR 多余空格
+  - 建议：检查并合并数字中的空格，如 42. 29 → 42.29
+  - 证据：54. 71
+- **[warning]** `FORMAT_OCR_NUMBER_SPACE`: 数值中可能存在 OCR 多余空格
+  - 建议：检查并合并数字中的空格，如 42. 29 → 42.29
+  - 证据：10. 26
+- **[warning]** `FORMAT_OCR_NUMBER_SPACE`: 数值中可能存在 OCR 多余空格
+  - 建议：检查并合并数字中的空格，如 42. 29 → 42.29
+  - 证据：47. 92
+- **[warning]** `FORMAT_OCR_NUMBER_SPACE`: 数值中可能存在 OCR 多余空格
+  - 建议：检查并合并数字中的空格，如 42. 29 → 42.29
+  - 证据：8. 89
+- **[warning]** `FORMAT_OCR_NUMBER_SPACE`: 数值中可能存在 OCR 多余空格
+  - 建议：检查并合并数字中的空格，如 42. 29 → 42.29
+  - 证据：44. 17
+- **[warning]** `FORMAT_OCR_NUMBER_SPACE`: 数值中可能存在 OCR 多余空格
+  - 建议：检查并合并数字中的空格，如 42. 29 → 42.29
+  - 证据：8. 64
+- **[warning]** `FORMAT_OCR_NUMBER_SPACE`: 数值中可能存在 OCR 多余空格
+  - 建议：检查并合并数字中的空格，如 42. 29 → 42.29
+  - 证据：44. 19
+- **[warning]** `FORMAT_OCR_NUMBER_SPACE`: 数值中可能存在 OCR 多余空格
+  - 建议：检查并合并数字中的空格，如 42. 29 → 42.29
+  - 证据：8. 25
+- **[warning]** `FORMAT_OCR_NUMBER_SPACE`: 数值中可能存在 OCR 多余空格
+  - 建议：检查并合并数字中的空格，如 42. 29 → 42.29
+  - 证据：45. 43
+- **[warning]** `FORMAT_OCR_NUMBER_SPACE`: 数值中可能存在 OCR 多余空格
+  - 建议：检查并合并数字中的空格，如 42. 29 → 42.29
+  - 证据：8. 86
+- **[warning]** `FORMAT_OCR_NUMBER_SPACE`: 数值中可能存在 OCR 多余空格
+  - 建议：检查并合并数字中的空格，如 42. 29 → 42.29
+  - 证据：42. 60
+- **[warning]** `FORMAT_OCR_NUMBER_SPACE`: 数值中可能存在 OCR 多余空格
+  - 建议：检查并合并数字中的空格，如 42. 29 → 42.29
+  - 证据：8. 14
+- **[warning]** `FORMAT_OCR_NUMBER_SPACE`: 数值中可能存在 OCR 多余空格
+  - 建议：检查并合并数字中的空格，如 42. 29 → 42.29
+  - 证据：46. 34
+- **[warning]** `FORMAT_OCR_NUMBER_SPACE`: 数值中可能存在 OCR 多余空格
+  - 建议：检查并合并数字中的空格，如 42. 29 → 42.29
+  - 证据：8. 96
+- **[warning]** `FORMAT_OCR_NUMBER_SPACE`: 数值中可能存在 OCR 多余空格
+  - 建议：检查并合并数字中的空格，如 42. 29 → 42.29
+  - 证据：39. 89
+- **[warning]** `FORMAT_OCR_NUMBER_SPACE`: 数值中可能存在 OCR 多余空格
+  - 建议：检查并合并数字中的空格，如 42. 29 → 42.29
+  - 证据：7. 66
+- **[warning]** `FORMAT_OCR_NUMBER_SPACE`: 数值中可能存在 OCR 多余空格
+  - 建议：检查并合并数字中的空格，如 42. 29 → 42.29
+  - 证据：27. 52
+- **[warning]** `FORMAT_OCR_NUMBER_SPACE`: 数值中可能存在 OCR 多余空格
+  - 建议：检查并合并数字中的空格，如 42. 29 → 42.29
+  - 证据：5. 23
+- **[warning]** `FORMAT_OCR_NUMBER_SPACE`: 数值中可能存在 OCR 多余空格
+  - 建议：检查并合并数字中的空格，如 42. 29 → 42.29
+  - 证据：40. 61
+- **[warning]** `FORMAT_OCR_NUMBER_SPACE`: 数值中可能存在 OCR 多余空格
+  - 建议：检查并合并数字中的空格，如 42. 29 → 42.29
+  - 证据：41. 62
+- **[warning]** `FORMAT_OCR_NUMBER_SPACE`: 数值中可能存在 OCR 多余空格
+  - 建议：检查并合并数字中的空格，如 42. 29 → 42.29
+  - 证据：29. 40
+- **[warning]** `FORMAT_OCR_NUMBER_SPACE`: 数值中可能存在 OCR 多余空格
+  - 建议：检查并合并数字中的空格，如 42. 29 → 42.29
+  - 证据：31. 00
+- **[warning]** `FORMAT_OCR_NUMBER_SPACE`: 数值中可能存在 OCR 多余空格
+  - 建议：检查并合并数字中的空格，如 42. 29 → 42.29
+  - 证据：3. 3
+- **[warning]** `FORMAT_OCR_NUMBER_SPACE`: 数值中可能存在 OCR 多余空格
+  - 建议：检查并合并数字中的空格，如 42. 29 → 42.29
+  - 证据：3. 4
+- **[warning]** `FORMAT_OCR_NUMBER_SPACE`: 数值中可能存在 OCR 多余空格
+  - 建议：检查并合并数字中的空格，如 42. 29 → 42.29
+  - 证据：26. 97
+- **[warning]** `FORMAT_OCR_NUMBER_SPACE`: 数值中可能存在 OCR 多余空格
+  - 建议：检查并合并数字中的空格，如 42. 29 → 42.29
+  - 证据：35. 00
+- **[warning]** `FORMAT_OCR_NUMBER_SPACE`: 数值中可能存在 OCR 多余空格
+  - 建议：检查并合并数字中的空格，如 42. 29 → 42.29
+  - 证据：49. 88
+- **[warning]** `FORMAT_OCR_NUMBER_SPACE`: 数值中可能存在 OCR 多余空格
+  - 建议：检查并合并数字中的空格，如 42. 29 → 42.29
+  - 证据：5. 17
+- **[warning]** `FORMAT_OCR_NUMBER_SPACE`: 数值中可能存在 OCR 多余空格
+  - 建议：检查并合并数字中的空格，如 42. 29 → 42.29
+  - 证据：53. 62
+- **[warning]** `FORMAT_OCR_NUMBER_SPACE`: 数值中可能存在 OCR 多余空格
+  - 建议：检查并合并数字中的空格，如 42. 29 → 42.29
+  - 证据：5. 18
+- **[warning]** `FORMAT_OCR_NUMBER_SPACE`: 数值中可能存在 OCR 多余空格
+  - 建议：检查并合并数字中的空格，如 42. 29 → 42.29
+  - 证据：52. 78
+- **[warning]** `FORMAT_OCR_NUMBER_SPACE`: 数值中可能存在 OCR 多余空格
+  - 建议：检查并合并数字中的空格，如 42. 29 → 42.29
+  - 证据：5. 14
+- **[warning]** `FORMAT_OCR_NUMBER_SPACE`: 数值中可能存在 OCR 多余空格
+  - 建议：检查并合并数字中的空格，如 42. 29 → 42.29
+  - 证据：56. 48
+- **[warning]** `FORMAT_OCR_NUMBER_SPACE`: 数值中可能存在 OCR 多余空格
+  - 建议：检查并合并数字中的空格，如 42. 29 → 42.29
+  - 证据：5. 41
+- **[warning]** `FORMAT_OCR_NUMBER_SPACE`: 数值中可能存在 OCR 多余空格
+  - 建议：检查并合并数字中的空格，如 42. 29 → 42.29
+  - 证据：61. 42
+- **[warning]** `FORMAT_OCR_NUMBER_SPACE`: 数值中可能存在 OCR 多余空格
+  - 建议：检查并合并数字中的空格，如 42. 29 → 42.29
+  - 证据：6. 21
+- **[warning]** `FORMAT_OCR_NUMBER_SPACE`: 数值中可能存在 OCR 多余空格
+  - 建议：检查并合并数字中的空格，如 42. 29 → 42.29
+  - 证据：48. 37
+- **[warning]** `FORMAT_OCR_NUMBER_SPACE`: 数值中可能存在 OCR 多余空格
+  - 建议：检查并合并数字中的空格，如 42. 29 → 42.29
+  - 证据：4. 60
+- **[warning]** `FORMAT_OCR_NUMBER_SPACE`: 数值中可能存在 OCR 多余空格
+  - 建议：检查并合并数字中的空格，如 42. 29 → 42.29
+  - 证据：42. 29
+- **[warning]** `FORMAT_OCR_NUMBER_SPACE`: 数值中可能存在 OCR 多余空格
+  - 建议：检查并合并数字中的空格，如 42. 29 → 42.29
+  - 证据：5. 66
+- **[warning]** `FORMAT_OCR_NUMBER_SPACE`: 数值中可能存在 OCR 多余空格
+  - 建议：检查并合并数字中的空格，如 42. 29 → 42.29
+  - 证据：4. 18
+- **[warning]** `FORMAT_OCR_NUMBER_SPACE`: 数值中可能存在 OCR 多余空格
+  - 建议：检查并合并数字中的空格，如 42. 29 → 42.29
+  - 证据：1. 06
+- **[warning]** `FORMAT_OCR_NUMBER_SPACE`: 数值中可能存在 OCR 多余空格
+  - 建议：检查并合并数字中的空格，如 42. 29 → 42.29
+  - 证据：2. 39
+- **[warning]** `FORMAT_OCR_NUMBER_SPACE`: 数值中可能存在 OCR 多余空格
+  - 建议：检查并合并数字中的空格，如 42. 29 → 42.29
+  - 证据：42. 29
+- **[warning]** `FORMAT_OCR_NUMBER_SPACE`: 数值中可能存在 OCR 多余空格
+  - 建议：检查并合并数字中的空格，如 42. 29 → 42.29
+  - 证据：5. 66
+- **[warning]** `FORMAT_OCR_NUMBER_SPACE`: 数值中可能存在 OCR 多余空格
+  - 建议：检查并合并数字中的空格，如 42. 29 → 42.29
+  - 证据：4. 18
+- **[warning]** `FORMAT_OCR_NUMBER_SPACE`: 数值中可能存在 OCR 多余空格
+  - 建议：检查并合并数字中的空格，如 42. 29 → 42.29
+  - 证据：1. 06
+- **[warning]** `FORMAT_OCR_NUMBER_SPACE`: 数值中可能存在 OCR 多余空格
+  - 建议：检查并合并数字中的空格，如 42. 29 → 42.29
+  - 证据：64. 28
+- **[warning]** `FORMAT_OCR_NUMBER_SPACE`: 数值中可能存在 OCR 多余空格
+  - 建议：检查并合并数字中的空格，如 42. 29 → 42.29
+  - 证据：7. 84
+- **[warning]** `FORMAT_OCR_NUMBER_SPACE`: 数值中可能存在 OCR 多余空格
+  - 建议：检查并合并数字中的空格，如 42. 29 → 42.29
+  - 证据：6. 57
+- **[warning]** `FORMAT_OCR_NUMBER_SPACE`: 数值中可能存在 OCR 多余空格
+  - 建议：检查并合并数字中的空格，如 42. 29 → 42.29
+  - 证据：1. 08
+- **[warning]** `FORMAT_OCR_NUMBER_SPACE`: 数值中可能存在 OCR 多余空格
+  - 建议：检查并合并数字中的空格，如 42. 29 → 42.29
+  - 证据：34. 20
+- **[warning]** `FORMAT_OCR_NUMBER_SPACE`: 数值中可能存在 OCR 多余空格
+  - 建议：检查并合并数字中的空格，如 42. 29 → 42.29
+  - 证据：36. 37
+- **[warning]** `FORMAT_OCR_NUMBER_SPACE`: 数值中可能存在 OCR 多余空格
+  - 建议：检查并合并数字中的空格，如 42. 29 → 42.29
+  - 证据：26. 97
+- **[warning]** `FORMAT_OCR_NUMBER_SPACE`: 数值中可能存在 OCR 多余空格
+  - 建议：检查并合并数字中的空格，如 42. 29 → 42.29
+  - 证据：35. 00
+- **[error]** `STRUCT_MISSING_SECTION` (keywords): 缺少必需章节：keywords
+  - 建议：补充对应章节或检查解析结果
+  - 证据：规范依据: required_sections: abstract, keywords, references
+- **[warning]** `STRUCT_FIGURE_REF_MISSING`: 正文引用图 5，但未找到对应图题
+  - 建议：检查图题或图片解析结果
+  - 证据：图 5
+- **[info]** `STRUCT_KEYWORDS_OK` (keywords): 检测到 5 个关键词
+  - 证据：智能交通; 交通流预测; 深度学习; 公路隧道; 残差建模
+- **[warning]** `GRAMMAR_LLM` (sec_0, L3): 建议在英文期刊名与括号之间、ISSN与CN之间添加空格，使格式更规范。
+- **[warning]** `GRAMMAR_LLM` (sec_0, L7): 建议将“题目”改为“题名”，以符合学术文献的规范表述。
+- **[warning]** `GRAMMAR_LLM` (sec_0, L9): 建议在作者姓名之间的逗号后添加空格，以提高可读性。
+- **[warning]** `GRAMMAR_LLM` (sec_0, L11): 建议在“收稿日期”和“网络首发日期”之间使用分号或换行进行分隔，使结构更清晰。
+- **[warning]** `GRAMMAR_LLM` (sec_0, L13): 建议在作者姓名之间的逗号后添加空格，以符合引用格式的规范。
+- **[warning]** `GRAMMAR_LLM` (sec_0, L13): “深度学”应为“深度学习”，建议修正为完整术语。
+- **[warning]** `GRAMMAR_LLM` (sec_0, L15): “习模型”应为“模型”，建议删除多余的“习”字，使上下文连贯。
+- **[info]** `POLISH_LLM` (sec_0, L7): 建议将“题目:”改为“题名:”或“标题:”，以更符合学术文献的规范表述。
+- **[info]** `POLISH_LLM` (sec_0, L9): 建议在作者姓名之间添加空格，以增强可读性并符合常见排版规范。
+- **[info]** `POLISH_LLM` (sec_0, L11): 建议在“收稿日期”和“网络首发日期”之间使用分号或换行分隔，使日期信息更清晰。
+- **[info]** `POLISH_LLM` (sec_0, L13): 建议在作者姓名之间添加空格，以提高可读性。
+- **[info]** `POLISH_LLM` (sec_0, L15): “习模型”可能为“学习模型”的输入错误或显示不全，建议确认原文是否应为“学习模型”或补充完整。
+- **[info]** `POLISH_LLM` (sec_0, L15): 建议在期刊名称后补充卷期、页码等信息，使引用格式更完整。
