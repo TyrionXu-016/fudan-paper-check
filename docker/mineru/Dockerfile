@@ -1,13 +1,17 @@
 # MinerU PDF converter.
 #
 # The application contract is `INPUT.pdf OUTPUT.md`. Build this image as
-# `fudan-pager-mineru` for local quasi-production acceptance.
+# `fudan-pager-mse-mineru` for the isolated MSE backend deployment.
 FROM python:3.12-slim-bookworm
 ENV PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1 \
     MINERU_BACKEND=pipeline \
     MINERU_METHOD=auto
-RUN apt-get update \
+RUN sed -i \
+        -e 's|http://deb.debian.org/debian|http://mirrors.aliyun.com/debian|g' \
+        -e 's|http://security.debian.org/debian-security|http://mirrors.aliyun.com/debian-security|g' \
+        /etc/apt/sources.list.d/debian.sources \
+    && apt-get update \
     && apt-get install -y --no-install-recommends \
         ca-certificates \
         curl \
@@ -16,8 +20,8 @@ RUN apt-get update \
         libgomp1 \
         poppler-utils \
     && rm -rf /var/lib/apt/lists/* \
-    && pip install --no-cache-dir -U 'mineru[pipeline]'
-RUN pip install --no-cache-dir six
+    && pip install --no-cache-dir -U -i https://pypi.tuna.tsinghua.edu.cn/simple 'mineru[pipeline]'
+RUN pip install --no-cache-dir -i https://pypi.tuna.tsinghua.edu.cn/simple six
 COPY docker/mineru-entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 ENTRYPOINT ["/entrypoint.sh"]
