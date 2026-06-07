@@ -36,7 +36,7 @@ if [[ ! -f deploy/.env.prod ]]; then
   JWT=\$(openssl rand -hex 32)
   cat > deploy/.env.prod <<EOF
 JWT_SECRET=\${JWT}
-CORS_ORIGINS=https://pager.tyrion.space,http://114.55.139.240,http://localhost:3000
+CORS_ORIGINS=https://paper.tyrion.space,http://114.55.139.240,http://localhost:3000
 PDF_CONVERTER_MODE=mock
 EOF
   chmod 600 deploy/.env.prod

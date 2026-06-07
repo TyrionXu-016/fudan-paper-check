@@ -6,7 +6,8 @@
 |----|-----|
 | 路径 | `/opt/fudan-pager-check` |
 | API 容器端口 | `127.0.0.1:18082` → 8000 |
-| 域名 | `paper-api.tyrion.space` |
+| 后端 API 域名 | `paper-api.tyrion.space` |
+| 前端 Vercel 域名 | `paper.tyrion.space` |
 
 ## 需要你配置的 DNS
 
@@ -14,9 +15,13 @@
 
 | 类型 | 主机记录 | 记录值 |
 |------|----------|--------|
+| A | `paper` | `76.76.21.21` |
 | A | `paper-api` | `114.55.139.240` |
 
-解析生效后访问：`http://paper-api.tyrion.space/v1/rule_bases`
+解析生效后访问：
+
+- 前端：`https://paper.tyrion.space`
+- 后端：`https://paper-api.tyrion.space/v1/rule_bases`
 
 ## HTTPS（DNS 生效后执行）
 
@@ -68,7 +73,7 @@ curl -H "Host: paper-api.tyrion.space" http://127.0.0.1/v1/rule_bases
 `deploy/.env.prod`（已在服务器生成，勿提交 Git）：
 
 - `JWT_SECRET` — 生产 JWT 密钥
-- `CORS_ORIGINS` — 允许的前端来源
+- `CORS_ORIGINS` — 允许的前端来源，应包含 `https://paper.tyrion.space`
 - `PDF_CONVERTER_MODE=mock` — PDF 转换 mock（未部署 maker/mineru 镜像时）
 
 ## 一键部署（本地）
