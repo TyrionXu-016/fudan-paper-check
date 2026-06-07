@@ -2,7 +2,9 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { STAGES } from '../data/paper'
 import { getResult, uploadAndCheck } from '../api/checkApi'
+import { adaptReport } from '../api/adapter'
 import { useUiStore } from './ui'
+import { useIssuesStore } from './issues'
 
 export type TaskState = 'idle' | 'uploading' | 'detecting' | 'done'
 
@@ -55,6 +57,10 @@ export const useTaskStore = defineStore('task', () => {
         detectStage.value = r.stage
         detectPct.value = r.percent
         if (r.status === 'DONE') {
+          // 真后端返回时把检测结果灌入 issuesStore（mock 模式 r.report 为空，保持原有演示数据）
+          if (r.report) {
+            useIssuesStore().setIssues(adaptReport(r.report))
+          }
           taskState.value = 'done'
           ui.toast(`检测完成，共发现 ${r.issueCount} 项问题`, 'success')
           return
