@@ -10,12 +10,13 @@ const drag = ref(false)
 const inputEl = ref<HTMLInputElement | null>(null)
 
 const MAX_SIZE = 50 * 1024 * 1024 // 50MB（方案 §3.3）
-const ACCEPT = /\.(docx|pdf)$/i
+// 与后端 CHECK_ALLOWED_SUFFIXES 对齐：.pdf .docx .md .markdown
+const ACCEPT = /\.(docx|pdf|md|markdown)$/i
 
 function validateAndStart(file: File | undefined | null) {
   if (!file) return
   if (!ACCEPT.test(file.name)) {
-    ui.toast('仅支持 .docx / .pdf 格式，请重新选择', 'info')
+    ui.toast('仅支持 .docx / .pdf / .md 格式，请重新选择', 'info')
     return
   }
   if (file.size > MAX_SIZE) {
@@ -56,15 +57,15 @@ function openPicker() {
     <input
       ref="inputEl"
       type="file"
-      accept=".docx,.pdf"
+      accept=".docx,.pdf,.md,.markdown"
       style="display: none"
       @change="onPick"
     />
     <div class="upload-icon"><AppIcon name="upload" :size="22" /></div>
     <div class="upload-title">拖拽 / 点击上传论文</div>
     <div class="upload-hint">
-      支持 <span class="kbd">.docx</span> <span class="kbd">.pdf</span> · 最大 50MB ·
-      &gt;10MB 自动分片
+      支持 <span class="kbd">.docx</span> <span class="kbd">.pdf</span>
+      <span class="kbd">.md</span> · 最大 50MB · &gt;10MB 自动分片
     </div>
   </div>
 

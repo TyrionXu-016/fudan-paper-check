@@ -51,9 +51,28 @@ const SEVERITY_MAP: Record<string, Severity> = {
 
 const truncate = (s: string, n = 20): string => (s && s.length > n ? `${s.slice(0, n)}…` : s || '')
 
+const SECTION_NAME_MAP: Record<string, string> = {
+  abstract: '摘要',
+  references: '参考文献',
+  introduction: '引言',
+  intro: '引言',
+  method: '方法',
+  methods: '方法',
+  experiment: '实验',
+  experiments: '实验',
+  results: '实验结果',
+  discussion: '讨论',
+  conclusion: '结论',
+  acknowledgement: '致谢',
+  acknowledgements: '致谢',
+}
+
 function buildLocation(i: BackendIssue): string {
   const parts: string[] = []
-  if (i.section) parts.push(i.section)
+  if (i.section) {
+    const key = i.section.toLowerCase()
+    parts.push(SECTION_NAME_MAP[key] || i.section)
+  }
   if (i.page_line) parts.push(i.page_line)
   else if (i.line != null) parts.push(`第 ${i.line} 行`)
   else if (i.page != null) parts.push(`第 ${i.page} 页`)

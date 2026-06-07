@@ -1,7 +1,8 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
-import { STAGES } from '../data/paper'
-import { getResult, uploadAndCheck } from '../api/checkApi'
+import { RULES, STAGES } from '../data/paper'
+import type { Rule } from '../types'
+import { getResult, getRuleBases, uploadAndCheck } from '../api/checkApi'
 import { adaptReport } from '../api/adapter'
 import { useUiStore } from './ui'
 import { useIssuesStore } from './issues'
@@ -28,11 +29,16 @@ export const useTaskStore = defineStore('task', () => {
   const detectStage = ref('FORMAT_CHECK')
   const detectPct = ref(35)
   const ruleId = ref('pku-ug')
+  const rules = ref<Rule[]>(RULES) // 默认 mock 列表；真后端模式下 loadRuleBases 替换
 
   const fileSizeText = computed(() => formatSize(fileSize.value))
-  const fileTypeLabel = computed(() =>
-    /\.pdf$/i.test(fileName.value) ? 'PDF 文档' : 'Word 文档',
-  )
+  const fileTypeLabel = computed(() => {
+    const n = fileName.value.toLowerCase()
+    if (n.endsWith('.pdf')) return 'PDF 文档'
+    if (n.endsWith('.docx')) return 'Word 文档'
+    if (n.endsWith('.md') || n.endsWith('.markdown')) return 'Markdown'
+    return '文档'
+  })
 
   // 轮询令牌：reset / 重新上传时使旧轮询失效
   let pollToken = 0
@@ -128,6 +134,19 @@ export const useTaskStore = defineStore('task', () => {
     ruleId.value = id
   }
 
+  // 真后端模式：拉真实规范列表替换 mock；并把默认 ruleId 改为后端第一个
+  async function loadRuleBases() {
+    try {
+      const list = await getRuleBases()
+      if (list.length) {
+        rules.value = list
+        if (!list.find((r) => r.id === ruleId.value)) ruleId.value = list[0].id
+      }
+    } catch (e) {
+      useUiStore().toast(e instanceof Error ? e.message : '规范列表加载失败', 'info')
+    }
+  }
+
   function reset() {
     stopPolling()
     taskState.value = 'idle'
@@ -144,11 +163,13 @@ export const useTaskStore = defineStore('task', () => {
     detectStage,
     detectPct,
     ruleId,
+    rules,
     startUpload,
     startPolling,
     setState,
     setStage,
     setRule,
+    loadRuleBases,
     reset,
   }
 })

@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import AppIcon from '../AppIcon.vue'
-import { RULES } from '../../data/paper'
 import { useTaskStore } from '../../stores/task'
 import { useIssuesStore } from '../../stores/issues'
 import { useUiStore } from '../../stores/ui'
@@ -11,7 +10,7 @@ const issues = useIssuesStore()
 const ui = useUiStore()
 
 const open = ref(false)
-const rule = computed(() => RULES.find((r) => r.id === task.ruleId) ?? RULES[0])
+const rule = computed(() => task.rules.find((r) => r.id === task.ruleId) ?? task.rules[0])
 
 function choose(id: string) {
   task.setRule(id)
@@ -40,7 +39,7 @@ function choose(id: string) {
         "
       >
         <div
-          v-for="r in RULES"
+          v-for="r in task.rules"
           :key="r.id"
           @click="choose(r.id)"
           style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; cursor: pointer; border-bottom: 1px solid var(--border)"
