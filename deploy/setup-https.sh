@@ -4,7 +4,7 @@ set -euo pipefail
 
 DOMAIN="api-mse.tyrion.space"
 EXPECTED_IP="114.55.139.240"
-REMOTE_DIR="/opt/fudan-pager-check"
+REMOTE_DIR="/opt/fudan-pager-check-mse"
 NGINX_CONF="/etc/nginx/conf.d/api-mse.tyrion.space.conf"
 
 echo "==> 检查 DNS: ${DOMAIN} -> ${EXPECTED_IP}"

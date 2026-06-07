@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-DEPLOY_DIR="${DEPLOY_DIR:-/opt/fudan-pager-check}"
+DEPLOY_DIR="${DEPLOY_DIR:-/opt/fudan-pager-check-mse}"
 DEPLOY_REMOTE="${DEPLOY_REMOTE:-origin}"
 DEPLOY_BRANCH="${DEPLOY_BRANCH:-mse-tyrion}"
 COMPOSE_FILE="${COMPOSE_FILE:-deploy/docker-compose.prod.yml}"
 ENV_FILE="${ENV_FILE:-deploy/.env.prod}"
-LOCK_FILE="${LOCK_FILE:-/var/lock/fudan-pager-check-deploy.lock}"
-API_HEALTH_URL="${API_HEALTH_URL:-http://127.0.0.1:18082/health}"
+LOCK_FILE="${LOCK_FILE:-/var/lock/fudan-pager-check-mse-deploy.lock}"
+API_HEALTH_URL="${API_HEALTH_URL:-http://127.0.0.1:18083/health}"
 
 log() {
   printf '[%s] %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$*"
@@ -83,13 +83,13 @@ APP_BASE_URL=https://api-mse.tyrion.space
 MSE_DATABASE_URL=sqlite:////app/data/mse.db
 PDF_CONVERTER_MODE=docker
 MSE_ALLOW_MOCK_FALLBACK=0
-MINERU_IMAGE=fudan-pager-mineru
-MAKER_IMAGE=fudan-pager-maker
+MINERU_IMAGE=fudan-pager-mse-mineru
+MAKER_IMAGE=fudan-pager-mse-maker
 MINERU_BACKEND=pipeline
 MINERU_METHOD=auto
 MINERU_MAX_RETRIES=2
 MINERU_TIMEOUT_SECONDS=1800
-MINERU_CACHE_VOLUME=fudan-pager-mineru-cache
+MINERU_CACHE_VOLUME=fudan-pager-mse-mineru-cache
 NOTIFIER=console
 LLM_PROVIDER=deepseek
 LLM_BASE_URL=https://api.deepseek.com/v1
@@ -106,13 +106,13 @@ EOF
   set_env_default "MSE_DATABASE_URL" "sqlite:////app/data/mse.db"
   set_env_value "PDF_CONVERTER_MODE" "docker"
   set_env_value "MSE_ALLOW_MOCK_FALLBACK" "0"
-  set_env_default "MINERU_IMAGE" "fudan-pager-mineru"
-  set_env_default "MAKER_IMAGE" "fudan-pager-maker"
+  set_env_default "MINERU_IMAGE" "fudan-pager-mse-mineru"
+  set_env_default "MAKER_IMAGE" "fudan-pager-mse-maker"
   set_env_default "MINERU_BACKEND" "pipeline"
   set_env_default "MINERU_METHOD" "auto"
   set_env_default "MINERU_MAX_RETRIES" "2"
   set_env_default "MINERU_TIMEOUT_SECONDS" "1800"
-  set_env_default "MINERU_CACHE_VOLUME" "fudan-pager-mineru-cache"
+  set_env_default "MINERU_CACHE_VOLUME" "fudan-pager-mse-mineru-cache"
   set_env_default "NOTIFIER" "console"
   set_env_default "LLM_PROVIDER" "deepseek"
   set_env_default "LLM_BASE_URL" "https://api.deepseek.com/v1"

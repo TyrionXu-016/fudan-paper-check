@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-DEPLOY_DIR="${DEPLOY_DIR:-/opt/fudan-pager-check}"
+DEPLOY_DIR="${DEPLOY_DIR:-/opt/fudan-pager-check-mse}"
 DEPLOY_BRANCH="${DEPLOY_BRANCH:-mse-tyrion}"
 DEPLOY_REMOTE="${DEPLOY_REMOTE:-origin}"
-SERVICE_NAME="${SERVICE_NAME:-fudan-pager-check-autodeploy}"
+SERVICE_NAME="${SERVICE_NAME:-fudan-pager-check-mse-autodeploy}"
 SERVICE_FILE="/etc/systemd/system/${SERVICE_NAME}.service"
 TIMER_FILE="/etc/systemd/system/${SERVICE_NAME}.timer"
 

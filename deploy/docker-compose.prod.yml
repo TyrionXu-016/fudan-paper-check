@@ -2,6 +2,8 @@
 # 用法：在仓库根目录执行
 #   docker compose -f deploy/docker-compose.prod.yml --env-file deploy/.env.prod up -d --build
 
+name: fudan-pager-mse
+
 services:
   redis:
     image: redis:7-alpine
@@ -16,7 +18,7 @@ services:
     command: uvicorn api.main:app --host 0.0.0.0 --port 8000 --app-dir apps
     restart: unless-stopped
     ports:
-      - "127.0.0.1:18082:8000"
+      - "127.0.0.1:18083:8000"
     environment:
       PYTHONPATH: /app/packages:/app/apps
       REDIS_URL: redis://redis:6379
@@ -26,14 +28,14 @@ services:
       APP_BASE_URL: ${APP_BASE_URL:-http://localhost:3000}
       PDF_CONVERTER_MODE: ${PDF_CONVERTER_MODE:-docker}
       MSE_ALLOW_MOCK_FALLBACK: ${MSE_ALLOW_MOCK_FALLBACK:-0}
-      MINERU_IMAGE: ${MINERU_IMAGE:-fudan-pager-mineru}
-      MAKER_IMAGE: ${MAKER_IMAGE:-fudan-pager-maker}
+      MINERU_IMAGE: ${MINERU_IMAGE:-fudan-pager-mse-mineru}
+      MAKER_IMAGE: ${MAKER_IMAGE:-fudan-pager-mse-maker}
       MINERU_BACKEND: ${MINERU_BACKEND:-pipeline}
       MINERU_METHOD: ${MINERU_METHOD:-auto}
       MINERU_MAX_RETRIES: ${MINERU_MAX_RETRIES:-2}
       MAKER_TIMEOUT_SECONDS: ${MAKER_TIMEOUT_SECONDS:-300}
       MINERU_TIMEOUT_SECONDS: ${MINERU_TIMEOUT_SECONDS:-1800}
-      MINERU_CACHE_VOLUME: ${MINERU_CACHE_VOLUME:-fudan-pager-mineru-cache}
+      MINERU_CACHE_VOLUME: ${MINERU_CACHE_VOLUME:-fudan-pager-mse-mineru-cache}
       MINERU_CACHE_DIR: ${MINERU_CACHE_DIR:-}
       MINERU_START_PAGE: ${MINERU_START_PAGE:-}
       MINERU_END_PAGE: ${MINERU_END_PAGE:-}
@@ -86,14 +88,14 @@ services:
       APP_BASE_URL: ${APP_BASE_URL:-http://localhost:3000}
       PDF_CONVERTER_MODE: ${PDF_CONVERTER_MODE:-docker}
       MSE_ALLOW_MOCK_FALLBACK: ${MSE_ALLOW_MOCK_FALLBACK:-0}
-      MINERU_IMAGE: ${MINERU_IMAGE:-fudan-pager-mineru}
-      MAKER_IMAGE: ${MAKER_IMAGE:-fudan-pager-maker}
+      MINERU_IMAGE: ${MINERU_IMAGE:-fudan-pager-mse-mineru}
+      MAKER_IMAGE: ${MAKER_IMAGE:-fudan-pager-mse-maker}
       MINERU_BACKEND: ${MINERU_BACKEND:-pipeline}
       MINERU_METHOD: ${MINERU_METHOD:-auto}
       MINERU_MAX_RETRIES: ${MINERU_MAX_RETRIES:-2}
       MAKER_TIMEOUT_SECONDS: ${MAKER_TIMEOUT_SECONDS:-300}
       MINERU_TIMEOUT_SECONDS: ${MINERU_TIMEOUT_SECONDS:-1800}
-      MINERU_CACHE_VOLUME: ${MINERU_CACHE_VOLUME:-fudan-pager-mineru-cache}
+      MINERU_CACHE_VOLUME: ${MINERU_CACHE_VOLUME:-fudan-pager-mse-mineru-cache}
       MINERU_CACHE_DIR: ${MINERU_CACHE_DIR:-}
       MINERU_START_PAGE: ${MINERU_START_PAGE:-}
       MINERU_END_PAGE: ${MINERU_END_PAGE:-}
