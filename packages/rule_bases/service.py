@@ -36,10 +36,10 @@ def load_rule_base_yaml(rule_base_id: str) -> dict:
     if not path.exists():
         path = _journals_dir() / "generic.yaml"
     if not path.exists():
-        return {"name": rule_base_id, "display_name": rule_base_id}
+        return {"id": rule_base_id, "name": rule_base_id, "display_name": rule_base_id}
     with path.open(encoding="utf-8") as f:
         data = yaml.safe_load(f) or {}
-    data.setdefault("name", rule_base_id)
+    data.setdefault("id", rule_base_id)
     return data
 
 
@@ -51,6 +51,36 @@ def _parse_summary(raw: dict | None) -> RuleBaseSummary:
     return RuleBaseSummary.model_validate(merged)
 
 
+def _section_titles(raw: object) -> list[str]:
+    titles: list[str] = []
+
+    def add(value: object) -> None:
+        if not value:
+            return
+        text = str(value)
+        if text not in titles:
+            titles.append(text)
+
+    def visit_item(item: object) -> None:
+        if isinstance(item, str):
+            add(item)
+        elif isinstance(item, dict):
+            add(item.get("title") or item.get("id"))
+
+    if isinstance(raw, list):
+        for item in raw:
+            visit_item(item)
+    elif isinstance(raw, dict):
+        for group in raw.values():
+            if isinstance(group, list):
+                for item in group:
+                    visit_item(item)
+            else:
+                visit_item(group)
+
+    return titles
+
+
 def get_rule_base(rule_base_id: str) -> RuleBaseDetail | None:
     path = _journals_dir() / f"{rule_base_id}.yaml"
     if not path.exists():
@@ -58,11 +88,11 @@ def get_rule_base(rule_base_id: str) -> RuleBaseDetail | None:
             return None
     data = load_rule_base_yaml(rule_base_id)
     return RuleBaseDetail(
-        id=data.get("name", rule_base_id),
-        display_name=data.get("display_name", rule_base_id),
+        id=data.get("id") or rule_base_id,
+        display_name=data.get("display_name") or data.get("name") or rule_base_id,
         summary=_parse_summary(data.get("summary")),
-        required_sections=list(data.get("required_sections") or []),
-        optional_sections=list(data.get("optional_sections") or []),
+        required_sections=_section_titles(data.get("required_sections")),
+        optional_sections=_section_titles(data.get("optional_sections")),
     )
 
 

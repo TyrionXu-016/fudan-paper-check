@@ -65,64 +65,136 @@ def _split_markdown_sections(path: Path) -> list[tuple[str, str]]:
     return [(title, body) for title, body in sections if body]
 
 
+def _summary_dimension(key: str) -> str:
+    if key in {"format", "reference", "structure", "typo", "grammar", "polish", "logic"}:
+        return key
+    return "format"
+
+
+def _text_list(values: object) -> str:
+    if not values:
+        return ""
+    if isinstance(values, list):
+        return "、".join(str(item) for item in values if item)
+    return str(values)
+
+
+def _section_chunk_text(item: object) -> tuple[str, str]:
+    if isinstance(item, str):
+        return item, f"论文须包含章节：{item}"
+    if not isinstance(item, dict):
+        return "unknown", ""
+
+    section_id = str(item.get("id") or item.get("title") or "unknown")
+    title = str(item.get("title") or section_id)
+    parts = [f"论文须包含章节：{title}"]
+    aliases = _text_list(item.get("aliases"))
+    fields = _text_list(item.get("fields"))
+    note = str(item.get("note") or "")
+    if aliases:
+        parts.append(f"亦称：{aliases}")
+    if fields:
+        parts.append(f"须含：{fields}")
+    if note:
+        parts.append(note)
+    return section_id, "。".join(parts)
+
+
 def _chunks_from_yaml(rule_base_id: str) -> list[RuleChunk]:
     data = load_rule_base_yaml(rule_base_id)
     chunks: list[RuleChunk] = []
     idx = 0
 
+    def add_chunk(*, dimension: str, text: str, source: str) -> None:
+        nonlocal idx
+        if not text.strip():
+            return
+        chunks.append(
+            _chunk_from_text(
+                rule_base_id=rule_base_id,
+                dimension=dimension,
+                text=text,
+                source=source,
+                chunk_index=idx,
+            )
+        )
+        idx += 1
+
     summary = data.get("summary") or {}
     for dimension, text in summary.items():
         if text:
-            chunks.append(
-                _chunk_from_text(
-                    rule_base_id=rule_base_id,
-                    dimension=str(dimension),
-                    text=str(text),
-                    source=f"{rule_base_id}.yaml#summary.{dimension}",
-                    chunk_index=idx,
-                )
+            add_chunk(
+                dimension=_summary_dimension(str(dimension)),
+                text=str(text),
+                source=f"{rule_base_id}.yaml#summary.{dimension}",
             )
-            idx += 1
 
     for field in ("required_sections", "optional_sections"):
         values = data.get(field) or []
-        if values:
-            chunks.append(
-                _chunk_from_text(
-                    rule_base_id=rule_base_id,
-                    dimension="format",
-                    text=f"{field}: {', '.join(values)}",
-                    source=f"{rule_base_id}.yaml#{field}",
-                    chunk_index=idx,
+        if isinstance(values, dict):
+            for group, sections in values.items():
+                if not isinstance(sections, list):
+                    continue
+                for section in sections:
+                    section_id, text = _section_chunk_text(section)
+                    add_chunk(
+                        dimension="structure",
+                        text=text,
+                        source=f"{rule_base_id}.yaml#{field}.{group}.{section_id}",
+                    )
+        elif isinstance(values, list):
+            for section in values:
+                section_id, text = _section_chunk_text(section)
+                add_chunk(
+                    dimension="structure",
+                    text=text,
+                    source=f"{rule_base_id}.yaml#{field}.{section_id}",
                 )
-            )
-            idx += 1
 
     patterns = data.get("patterns") or {}
     for name, pattern in patterns.items():
-        chunks.append(
-            _chunk_from_text(
-                rule_base_id=rule_base_id,
-                dimension="format",
-                text=f"pattern {name}: {pattern}",
-                source=f"{rule_base_id}.yaml#patterns.{name}",
-                chunk_index=idx,
-            )
+        if isinstance(pattern, dict):
+            text = str(pattern.get("message") or pattern.get("regex") or "")
+            dimension = str(pattern.get("dimension") or "format")
+        else:
+            text = f"pattern {name}: {pattern}"
+            dimension = "format"
+        add_chunk(
+            dimension=dimension,
+            text=text,
+            source=f"{rule_base_id}.yaml#patterns.{name}",
         )
-        idx += 1
 
     warnings = data.get("warnings") or {}
-    for name, pattern in warnings.items():
-        chunks.append(
-            _chunk_from_text(
-                rule_base_id=rule_base_id,
-                dimension="format",
-                text=f"warning {name}: {pattern}",
-                source=f"{rule_base_id}.yaml#warnings.{name}",
-                chunk_index=idx,
-            )
+    for name, warning in warnings.items():
+        if isinstance(warning, dict):
+            text = str(warning.get("text") or "")
+            dimension = str(warning.get("dimension") or "format")
+        else:
+            text = f"warning {name}: {warning}"
+            dimension = "format"
+        add_chunk(
+            dimension=dimension,
+            text=text,
+            source=f"{rule_base_id}.yaml#warnings.{name}",
         )
-        idx += 1
+
+    for rule in data.get("rules") or []:
+        if not isinstance(rule, dict):
+            continue
+        rule_id = str(rule.get("id") or "unknown")
+        text = str(rule.get("text") or "")
+        path = str(rule.get("path") or "")
+        target = str(rule.get("target") or "")
+        scope = str(rule.get("scope") or "")
+        prefix = "；".join(part for part in (path, target, scope) if part)
+        if prefix:
+            text = f"{prefix}\n{text}"
+        add_chunk(
+            dimension=str(rule.get("dimension") or "format"),
+            text=text,
+            source=f"{rule_base_id}.yaml#rules.{rule_id}",
+        )
 
     return chunks
 

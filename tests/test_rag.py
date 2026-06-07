@@ -40,6 +40,23 @@ def test_fudan_index_retrieves_school_rules(tmp_path, monkeypatch):
     assert any("复旦" in item.text or "关键词" in item.text for item in result.results)
 
 
+def test_fudan_thesis_index_retrieves_yaml_rules(tmp_path, monkeypatch):
+    monkeypatch.setattr("rag.rule_index._INDEX_DIR", tmp_path)
+
+    path = build_index("fudan_thesis")
+    assert path.exists()
+    index = load_index("fudan_thesis")
+    assert index is not None
+    assert index["chunk_count"] >= 30
+
+    binding = retrieve_rules("fudan_thesis", "不能使用钉子装订", top_k=5)
+    assert binding.rule_base_id == "fudan_thesis"
+    assert any("不能使用钉子装订" in item.text for item in binding.results)
+
+    cover = retrieve_rules("fudan_thesis", "封面 学校代码 10246 十一项", top_k=5)
+    assert any("学校代码（10246）" in item.text for item in cover.results)
+
+
 def _auth_headers(client):
     email = f"rag_{uuid.uuid4().hex[:8]}@example.com"
     res = client.post(

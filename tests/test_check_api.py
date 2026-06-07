@@ -31,6 +31,7 @@ def test_rule_bases_list():
     ids = {item["id"] for item in body["data"]}
     assert "generic" in ids
     assert "fudan_university" in ids
+    assert "fudan_thesis" in ids
     assert "scut_natural_science" in ids
 
 
@@ -49,6 +50,17 @@ def test_fudan_rule_base_detail():
     assert data["display_name"] == "复旦大学论文规范"
     assert "abstract" in data["required_sections"]
     assert "references" in data["required_sections"]
+
+
+def test_fudan_thesis_rule_base_detail():
+    res = client.get("/v1/rule_bases/fudan_thesis")
+    assert res.status_code == 200
+    data = res.json()["data"]
+    assert data["id"] == "fudan_thesis"
+    assert data["display_name"] == "复旦大学博士、硕士学位论文规范"
+    assert "中文摘要" in data["required_sections"]
+    assert "论文独创性声明与使用授权声明" in data["required_sections"]
+    assert "正文宋体、小四号" in data["summary"]["format"]
 
 
 def test_rule_bases_not_found():

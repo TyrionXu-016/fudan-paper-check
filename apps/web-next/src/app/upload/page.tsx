@@ -73,6 +73,7 @@ export default function UploadPage() {
               onChange={(e) => setJournalProfile(e.target.value)}
               className="mt-2 w-full rounded-xl border border-stone-200 px-4 py-3"
             >
+              <option value="fudan_thesis">复旦大学博士、硕士学位论文规范</option>
               <option value="scut_natural_science">华南理工大学学报（自然科学版）</option>
               <option value="generic">通用中文学术论文</option>
             </select>

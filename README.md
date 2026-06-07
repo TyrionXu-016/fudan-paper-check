@@ -126,7 +126,13 @@ export LLM_MODEL=gpt-4o-mini
 
 ## 期刊模板
 
+`config/journals/fudan_thesis.yaml` — 复旦大学博士、硕士学位论文规范（2024.10）
+
+`config/journals/fudan_university.yaml` — 复旦大学论文规范（预检摘要）
+
 `config/journals/scut_natural_science.yaml` — 华南理工大学学报（自然科学版）
+
+`config/journals/generic.yaml` — 通用中文学术论文
 
 ## 样本数据
 
