@@ -126,6 +126,18 @@ EOF
   chmod 600 "$ENV_FILE"
 }
 
+wait_for_health() {
+  local attempt
+  for attempt in $(seq 1 30); do
+    if curl -fsS "$API_HEALTH_URL" >/dev/null; then
+      return 0
+    fi
+    log "health check retry ${attempt}/30"
+    sleep 2
+  done
+  curl -fsS "$API_HEALTH_URL" >/dev/null
+}
+
 main() {
   require_cmd git
   require_cmd docker
@@ -171,7 +183,7 @@ main() {
   docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" ps
 
   log "health check"
-  curl -fsS "$API_HEALTH_URL" >/dev/null
+  wait_for_health
   log "deploy finished"
 }
 
