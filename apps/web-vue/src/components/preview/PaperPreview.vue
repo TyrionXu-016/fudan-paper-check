@@ -3,13 +3,15 @@ import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import ParaContent from './ParaContent'
 import ParagraphLogicHint from './ParagraphLogicHint.vue'
 import EditorToolbar from './EditorToolbar.vue'
-import { PAPER } from '../../data/paper'
 import { useUiStore } from '../../stores/ui'
 import { useEditorStore } from '../../stores/editor'
+import { useDocStore } from '../../stores/doc'
 
 const ui = useUiStore()
 const editor = useEditorStore()
-const paper = PAPER
+const doc = useDocStore()
+// 真后端加载后 doc.currentPaper 是真实论文，否则回落到 mock PAPER
+const paper = computed(() => doc.currentPaper)
 
 const bodyEl = ref<HTMLElement | null>(null)
 
@@ -86,8 +88,10 @@ onMounted(() => {
       <h1>{{ paper.title }}</h1>
       <div class="author">{{ paper.author }}</div>
 
-      <div class="abstract-label">摘 要</div>
-      <p v-for="(para, i) in paper.abstract" :key="`a-${i}`"><ParaContent :para="para" /></p>
+      <template v-if="paper.abstract.length">
+        <div class="abstract-label">摘 要</div>
+        <p v-for="(para, i) in paper.abstract" :key="`a-${i}`"><ParaContent :para="para" /></p>
+      </template>
 
       <template v-for="(sec, si) in paper.sections" :key="`sec-${si}`">
         <h2>{{ sec.heading }}</h2>

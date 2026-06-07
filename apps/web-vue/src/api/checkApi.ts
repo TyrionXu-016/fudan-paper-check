@@ -2,6 +2,8 @@ import axios from 'axios'
 import type { Rule } from '../types'
 import { ISSUES, RULES, STAGES } from '../data/paper'
 import { API_BASE, TOKEN_STORAGE_KEY, UNAUTHORIZED_EVENT, USE_MOCK } from './env'
+import type { BackendCheckReport } from './adapter'
+import type { BackendDocumentView } from './docAdapter'
 
 /**
  * 检测任务 API 客户端（方案 §4、§5；接入 fudan-pager-check 后端 mse-tyrion 分支）
@@ -51,6 +53,8 @@ export interface ResultResp {
   percent: number
   issueCount: number
   message?: string
+  /** DONE 时携带后端完整 CheckReport，便于任务层灌入 issuesStore */
+  report?: BackendCheckReport
 }
 
 export type ProgressCb = (percent: number) => void
@@ -95,14 +99,19 @@ async function realGetResult(taskId: string): Promise<ResultResp> {
     }
   }
   if (status === 'done') {
-    let issueCount = 0
+    let report: BackendCheckReport | undefined
     try {
-      const report = await http.get<unknown, Record<string, unknown>>(`/v1/result/${taskId}`)
-      issueCount = Array.isArray(report.issues) ? report.issues.length : 0
+      report = await http.get<unknown, BackendCheckReport>(`/v1/result/${taskId}`)
     } catch {
       // /v1/result 尚未就绪 (409) 等下次轮询再试，先按 0 处理
     }
-    return { status: 'DONE', stage: 'DONE', percent: 100, issueCount }
+    return {
+      status: 'DONE',
+      stage: 'DONE',
+      percent: 100,
+      issueCount: report?.issues?.length ?? 0,
+      report,
+    }
   }
   return {
     status: 'DETECTING',
@@ -167,4 +176,14 @@ export function uploadAndCheck(
 
 export function getResult(taskId: string): Promise<ResultResp> {
   return USE_MOCK ? Promise.resolve(mockGetResult(taskId)) : realGetResult(taskId)
+}
+
+// 拉真后端的 DocumentView（论文结构 + 扁平 spans）；mock 模式返回 null
+export async function fetchDocument(taskId: string): Promise<BackendDocumentView | null> {
+  if (USE_MOCK) return null
+  try {
+    return await http.get<unknown, BackendDocumentView>(`/v1/result/${taskId}/document`)
+  } catch {
+    return null
+  }
 }

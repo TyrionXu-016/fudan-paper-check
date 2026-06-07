@@ -32,9 +32,12 @@ const ui = useUiStore()
 const editor = useEditorStore()
 const auth = useAuthStore()
 
-// 真实后端模式下，若已有 token 则拉取当前用户信息（失败会自动登出）
+// 真实后端模式下，若已有 token 则拉取当前用户信息（失败会自动登出），并拉真实规范列表
 onMounted(() => {
-  if (AUTH_REQUIRED && auth.token) auth.fetchMe()
+  if (AUTH_REQUIRED) {
+    if (auth.token) auth.fetchMe()
+    task.loadRuleBases()
+  }
 })
 
 useShortcut()

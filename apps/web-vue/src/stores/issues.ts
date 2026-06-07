@@ -192,6 +192,17 @@ export const useIssuesStore = defineStore('issues', () => {
     activeIssueId.value = null
   }
 
+  // 真后端返回后用真实问题列表替换；清掉之前的决策/撤销栈/聚焦/过滤
+  function setIssues(arr: Issue[]) {
+    issues.value = arr
+    for (const k of Object.keys(decisions)) delete decisions[k]
+    undoStack.value = []
+    redoStack.value = []
+    activeIssueId.value = null
+    searchQuery.value = ''
+    filterType.value = 'ALL'
+  }
+
   return {
     issues,
     decisions,
@@ -220,5 +231,6 @@ export const useIssuesStore = defineStore('issues', () => {
     navigate,
     setActive,
     reset,
+    setIssues,
   }
 })

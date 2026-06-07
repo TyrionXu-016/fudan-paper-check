@@ -1,8 +1,14 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
-import { STAGES } from '../data/paper'
-import { getResult, uploadAndCheck } from '../api/checkApi'
+import { RULES, STAGES } from '../data/paper'
+import type { Rule } from '../types'
+import { fetchDocument, getResult, getRuleBases, uploadAndCheck } from '../api/checkApi'
+import { adaptReport } from '../api/adapter'
+import { adaptDocument } from '../api/docAdapter'
 import { useUiStore } from './ui'
+import { useIssuesStore } from './issues'
+import { useDocStore } from './doc'
+import { useVersionStore } from './version'
 
 export type TaskState = 'idle' | 'uploading' | 'detecting' | 'done'
 
@@ -26,11 +32,16 @@ export const useTaskStore = defineStore('task', () => {
   const detectStage = ref('FORMAT_CHECK')
   const detectPct = ref(35)
   const ruleId = ref('fudan_university')
+  const rules = ref<Rule[]>(RULES) // 默认 mock 列表；真后端模式下 loadRuleBases 替换
 
   const fileSizeText = computed(() => formatSize(fileSize.value))
-  const fileTypeLabel = computed(() =>
-    /\.pdf$/i.test(fileName.value) ? 'PDF 文档' : 'Word 文档',
-  )
+  const fileTypeLabel = computed(() => {
+    const n = fileName.value.toLowerCase()
+    if (n.endsWith('.pdf')) return 'PDF 文档'
+    if (n.endsWith('.docx')) return 'Word 文档'
+    if (n.endsWith('.md') || n.endsWith('.markdown')) return 'Markdown'
+    return '文档'
+  })
 
   // 轮询令牌：reset / 重新上传时使旧轮询失效
   let pollToken = 0
@@ -55,6 +66,16 @@ export const useTaskStore = defineStore('task', () => {
         detectStage.value = r.stage
         detectPct.value = r.percent
         if (r.status === 'DONE') {
+          // 真后端返回时把检测结果灌入 issuesStore + 重建论文（mock 模式两者皆空，保持原有演示数据）
+          if (r.report) {
+            useIssuesStore().setIssues(adaptReport(r.report))
+            const doc = await fetchDocument(taskId)
+            if (doc) {
+              const paper = adaptDocument(doc, r.report)
+              useDocStore().setPaper(paper)
+              useVersionStore().rebuildFromPaper(paper) // 让历史时间轴起点改为真实原文
+            }
+          }
           taskState.value = 'done'
           ui.toast(`检测完成，共发现 ${r.issueCount} 项问题`, 'success')
           return
@@ -122,10 +143,25 @@ export const useTaskStore = defineStore('task', () => {
     ruleId.value = id
   }
 
+  // 真后端模式：拉真实规范列表替换 mock；并把默认 ruleId 改为后端第一个
+  async function loadRuleBases() {
+    try {
+      const list = await getRuleBases()
+      if (list.length) {
+        rules.value = list
+        if (!list.find((r) => r.id === ruleId.value)) ruleId.value = list[0].id
+      }
+    } catch (e) {
+      useUiStore().toast(e instanceof Error ? e.message : '规范列表加载失败', 'info')
+    }
+  }
+
   function reset() {
     stopPolling()
     taskState.value = 'idle'
     uploadPct.value = 0
+    useDocStore().reset()
+    useVersionStore().reset() // reset 后版本链回到当前 paper（mock 回落）的初始状态
   }
 
   return {
@@ -138,11 +174,13 @@ export const useTaskStore = defineStore('task', () => {
     detectStage,
     detectPct,
     ruleId,
+    rules,
     startUpload,
     startPolling,
     setState,
     setStage,
     setRule,
+    loadRuleBases,
     reset,
   }
 })

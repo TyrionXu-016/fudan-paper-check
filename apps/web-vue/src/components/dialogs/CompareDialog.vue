@@ -2,14 +2,15 @@
 import { computed, ref } from 'vue'
 import AppIcon from '../AppIcon.vue'
 import ComparePane from './ComparePane'
-import { PAPER } from '../../data/paper'
 import { isSpanNode } from '../../types'
 import type { Paragraph } from '../../types'
 import { useIssuesStore } from '../../stores/issues'
 import { useUiStore } from '../../stores/ui'
+import { useDocStore } from '../../stores/doc'
 
 const issues = useIssuesStore()
 const ui = useUiStore()
+const doc = useDocStore()
 const diffIdx = ref(0)
 
 const total = computed(() => {
@@ -22,8 +23,9 @@ const total = computed(() => {
       }
     }
   }
-  PAPER.abstract.forEach(walk)
-  PAPER.sections.forEach((s) => s.paragraphs.forEach(walk))
+  const paper = doc.currentPaper
+  paper.abstract.forEach(walk)
+  paper.sections.forEach((s) => s.paragraphs.forEach(walk))
   return n
 })
 </script>

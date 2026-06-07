@@ -1,11 +1,11 @@
 import { defineStore } from 'pinia'
 import { reactive } from 'vue'
-import type { ModRecord, ModSource, Paragraph } from '../types'
+import type { ModRecord, ModSource, Paper, Paragraph } from '../types'
 import { isSpanNode } from '../types'
-import { PAPER } from '../data/paper'
 import { nowTs } from '../utils/time'
+import { useDocStore } from './doc'
 
-function buildInitial(): Record<string, ModRecord[]> {
+function buildFromPaper(paper: Paper): Record<string, ModRecord[]> {
   const v: Record<string, ModRecord[]> = {}
   const walk = (nodes: Paragraph) => {
     for (const n of nodes) {
@@ -16,14 +16,17 @@ function buildInitial(): Record<string, ModRecord[]> {
       }
     }
   }
-  PAPER.abstract.forEach(walk)
-  PAPER.sections.forEach((s) => s.paragraphs.forEach(walk))
+  paper.abstract.forEach(walk)
+  paper.sections.forEach((s) => s.paragraphs.forEach(walk))
   return v
 }
 
 // versionStore —— 管理预览区每个 span 节点的修改版本链（方案 §4.4）
+// 论文换了（真后端 setPaper 或 reset 回 mock）时调 rebuildFromPaper 重建版本链
 export const useVersionStore = defineStore('version', () => {
-  const versions = reactive<Record<string, ModRecord[]>>(buildInitial())
+  const versions = reactive<Record<string, ModRecord[]>>(
+    buildFromPaper(useDocStore().currentPaper),
+  )
 
   function push(spanId: string, content: string, source: ModSource, note: string) {
     versions[spanId] = [...(versions[spanId] || []), { content, source, ts: nowTs(), note }]
@@ -50,11 +53,15 @@ export const useVersionStore = defineStore('version', () => {
     return list?.[list.length - 1]?.content
   }
 
-  function reset() {
-    const init = buildInitial()
+  function rebuildFromPaper(paper: Paper) {
+    const init = buildFromPaper(paper)
     for (const k of Object.keys(versions)) delete versions[k]
     Object.assign(versions, init)
   }
 
-  return { versions, push, setHistory, applyRevert, popLast, current, reset }
+  function reset() {
+    rebuildFromPaper(useDocStore().currentPaper)
+  }
+
+  return { versions, push, setHistory, applyRevert, popLast, current, rebuildFromPaper, reset }
 })

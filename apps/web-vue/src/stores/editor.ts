@@ -1,8 +1,8 @@
 import { defineStore } from 'pinia'
 import { computed, reactive, ref } from 'vue'
-import { PAPER } from '../data/paper'
 import { isSpanNode, type Paragraph } from '../types'
 import { useVersionStore } from './version'
+import { useDocStore } from './doc'
 
 // 页面级排版设置（方案终期：行间距 / 页眉页脚 / 页边距 / 字体字号）
 export interface DocSettings {
@@ -41,9 +41,10 @@ export const useEditorStore = defineStore('editor', () => {
   const snapshots = ref<Snapshot[]>([])
   const pointer = ref(-1)
 
-  // 从原始论文 + 已有决策构建初始可编辑 HTML
+  // 从论文（真后端或 mock）+ 已有决策构建初始可编辑 HTML
   function buildHtmlFromPaper(): string {
     const version = useVersionStore()
+    const paper = useDocStore().currentPaper
     const resolve = (p: Paragraph) =>
       p
         .map((n) =>
@@ -52,11 +53,13 @@ export const useEditorStore = defineStore('editor', () => {
         .join('')
 
     const parts: string[] = []
-    parts.push(`<h1>${PAPER.title}</h1>`)
-    parts.push(`<p class="author">${PAPER.author}</p>`)
-    parts.push(`<p class="label">摘　要</p>`)
-    PAPER.abstract.forEach((p) => parts.push(`<p>${resolve(p)}</p>`))
-    PAPER.sections.forEach((s) => {
+    parts.push(`<h1>${paper.title}</h1>`)
+    if (paper.author) parts.push(`<p class="author">${paper.author}</p>`)
+    if (paper.abstract.length) {
+      parts.push(`<p class="label">摘　要</p>`)
+      paper.abstract.forEach((p) => parts.push(`<p>${resolve(p)}</p>`))
+    }
+    paper.sections.forEach((s) => {
       parts.push(`<h2>${s.heading}</h2>`)
       s.paragraphs.forEach((p) => parts.push(`<p>${resolve(p)}</p>`))
     })
