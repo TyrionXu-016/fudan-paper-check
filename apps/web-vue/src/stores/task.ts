@@ -2,10 +2,13 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { RULES, STAGES } from '../data/paper'
 import type { Rule } from '../types'
-import { getResult, getRuleBases, uploadAndCheck } from '../api/checkApi'
+import { fetchDocument, getResult, getRuleBases, uploadAndCheck } from '../api/checkApi'
 import { adaptReport } from '../api/adapter'
+import { adaptDocument } from '../api/docAdapter'
 import { useUiStore } from './ui'
 import { useIssuesStore } from './issues'
+import { useDocStore } from './doc'
+import { useVersionStore } from './version'
 
 export type TaskState = 'idle' | 'uploading' | 'detecting' | 'done'
 
@@ -63,9 +66,15 @@ export const useTaskStore = defineStore('task', () => {
         detectStage.value = r.stage
         detectPct.value = r.percent
         if (r.status === 'DONE') {
-          // 真后端返回时把检测结果灌入 issuesStore（mock 模式 r.report 为空，保持原有演示数据）
+          // 真后端返回时把检测结果灌入 issuesStore + 重建论文（mock 模式两者皆空，保持原有演示数据）
           if (r.report) {
             useIssuesStore().setIssues(adaptReport(r.report))
+            const doc = await fetchDocument(taskId)
+            if (doc) {
+              const paper = adaptDocument(doc, r.report)
+              useDocStore().setPaper(paper)
+              useVersionStore().rebuildFromPaper(paper) // 让历史时间轴起点改为真实原文
+            }
           }
           taskState.value = 'done'
           ui.toast(`检测完成，共发现 ${r.issueCount} 项问题`, 'success')
@@ -151,6 +160,8 @@ export const useTaskStore = defineStore('task', () => {
     stopPolling()
     taskState.value = 'idle'
     uploadPct.value = 0
+    useDocStore().reset()
+    useVersionStore().reset() // reset 后版本链回到当前 paper（mock 回落）的初始状态
   }
 
   return {

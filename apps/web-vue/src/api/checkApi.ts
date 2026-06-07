@@ -3,6 +3,7 @@ import type { Rule } from '../types'
 import { ISSUES, RULES, STAGES } from '../data/paper'
 import { API_BASE, TOKEN_STORAGE_KEY, UNAUTHORIZED_EVENT, USE_MOCK } from './env'
 import type { BackendCheckReport } from './adapter'
+import type { BackendDocumentView } from './docAdapter'
 
 /**
  * 检测任务 API 客户端（方案 §4、§5；接入 fudan-pager-check 后端 mse-tyrion 分支）
@@ -175,4 +176,14 @@ export function uploadAndCheck(
 
 export function getResult(taskId: string): Promise<ResultResp> {
   return USE_MOCK ? Promise.resolve(mockGetResult(taskId)) : realGetResult(taskId)
+}
+
+// 拉真后端的 DocumentView（论文结构 + 扁平 spans）；mock 模式返回 null
+export async function fetchDocument(taskId: string): Promise<BackendDocumentView | null> {
+  if (USE_MOCK) return null
+  try {
+    return await http.get<unknown, BackendDocumentView>(`/v1/result/${taskId}/document`)
+  } catch {
+    return null
+  }
 }

@@ -1,8 +1,8 @@
 import type { Paragraph } from '../types'
 import { isSpanNode } from '../types'
-import { PAPER } from '../data/paper'
 import { useVersionStore } from '../stores/version'
 import { useEditorStore } from '../stores/editor'
+import { useDocStore } from '../stores/doc'
 
 function escapeHtml(s: string): string {
   return s
@@ -24,6 +24,7 @@ function resolveParagraph(p: Paragraph, current: (spanId: string) => string | un
 // 文档编辑器有改动时，导出其内容 + 页面设置（行距/页边距/页眉页脚/字体）
 function buildFromEditor(forPrint: boolean): string {
   const editor = useEditorStore()
+  const paper = useDocStore().currentPaper
   const s = editor.settings
   const style = `
     body { font-family: ${s.fontFamily}; font-size: ${s.fontSize}px; line-height: ${s.lineHeight};
@@ -40,7 +41,7 @@ function buildFromEditor(forPrint: boolean): string {
   const header = s.headerText ? `<div class="doc-header">${escapeHtml(s.headerText)}</div>` : ''
   const footer = s.footerText ? `<div class="doc-footer">${escapeHtml(s.footerText)}</div>` : ''
   return `<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8" />
-<title>${escapeHtml(PAPER.title)}</title><style>${style}</style></head>
+<title>${escapeHtml(paper.title)}</title><style>${style}</style></head>
 <body>${header}${editor.docHtml}${footer}</body></html>`
 }
 
@@ -49,16 +50,19 @@ function buildDocumentHtml(forPrint: boolean): string {
   if (useEditorStore().dirty) return buildFromEditor(forPrint)
 
   const version = useVersionStore()
+  const paper = useDocStore().currentPaper
   const current = (spanId: string) => version.current(spanId)
 
   const paras: string[] = []
-  paras.push(`<h1>${escapeHtml(PAPER.title)}</h1>`)
-  paras.push(`<p class="author">${escapeHtml(PAPER.author)}</p>`)
-  paras.push(`<p class="label">摘　要</p>`)
-  for (const p of PAPER.abstract) {
-    paras.push(`<p class="body">${escapeHtml(resolveParagraph(p, current))}</p>`)
+  paras.push(`<h1>${escapeHtml(paper.title)}</h1>`)
+  if (paper.author) paras.push(`<p class="author">${escapeHtml(paper.author)}</p>`)
+  if (paper.abstract.length) {
+    paras.push(`<p class="label">摘　要</p>`)
+    for (const p of paper.abstract) {
+      paras.push(`<p class="body">${escapeHtml(resolveParagraph(p, current))}</p>`)
+    }
   }
-  for (const sec of PAPER.sections) {
+  for (const sec of paper.sections) {
     paras.push(`<h2>${escapeHtml(sec.heading)}</h2>`)
     for (const p of sec.paragraphs) {
       paras.push(`<p class="body">${escapeHtml(resolveParagraph(p, current))}</p>`)
@@ -77,7 +81,7 @@ function buildDocumentHtml(forPrint: boolean): string {
   `
 
   return `<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8" />
-<title>${escapeHtml(PAPER.title)}</title><style>${style}</style></head>
+<title>${escapeHtml(paper.title)}</title><style>${style}</style></head>
 <body>${paras.join('\n')}</body></html>`
 }
 
@@ -95,18 +99,20 @@ function triggerDownload(blob: Blob, filename: string) {
 // 导出 Word：生成 .doc（HTML 内核，Word/WPS 可直接打开，中文无乱码）
 export function exportWord() {
   const html = buildDocumentHtml(false)
+  const title = useDocStore().currentPaper.title || '论文'
   const blob = new Blob(['﻿', html], { type: 'application/msword;charset=utf-8' })
-  triggerDownload(blob, `${PAPER.title}.doc`)
+  triggerDownload(blob, `${title}.doc`)
 }
 
-// 导出 PDF：打开格式化打印窗口，由浏览器“打印 / 另存为 PDF”输出（中文矢量、可选中）
+// 导出 PDF：打开格式化打印窗口，由浏览器"打印 / 另存为 PDF"输出（中文矢量、可选中）
 export function exportPdf() {
   const html = buildDocumentHtml(true)
+  const title = useDocStore().currentPaper.title || '论文'
   const win = window.open('', '_blank', 'width=900,height=1000')
   if (!win) {
     // 弹窗被拦截时降级为 Blob 下载 HTML
     const blob = new Blob([html], { type: 'text/html;charset=utf-8' })
-    triggerDownload(blob, `${PAPER.title}.html`)
+    triggerDownload(blob, `${title}.html`)
     return
   }
   win.document.open()
