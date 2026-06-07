@@ -78,8 +78,8 @@ ensure_env_file() {
     cat >"$ENV_FILE" <<EOF
 JWT_SECRET=$(openssl rand -hex 32)
 MSE_INVITE_SECRET=$(openssl rand -hex 32)
-CORS_ORIGINS=https://api-mse.tyrion.space,http://api-mse.tyrion.space,http://114.55.139.240,http://localhost:3000
-APP_BASE_URL=https://api-mse.tyrion.space
+CORS_ORIGINS=https://mse.paper.tyrion.space,https://api-mse.tyrion.space,http://api-mse.tyrion.space,http://114.55.139.240,http://localhost:3000
+APP_BASE_URL=https://mse.paper.tyrion.space
 MSE_DATABASE_URL=sqlite:////app/data/mse.db
 PDF_CONVERTER_MODE=docker
 MSE_ALLOW_MOCK_FALLBACK=0
@@ -102,7 +102,7 @@ EOF
 
   set_env_default "JWT_SECRET" "$(openssl rand -hex 32)"
   set_env_default "MSE_INVITE_SECRET" "$(openssl rand -hex 32)"
-  set_env_default "APP_BASE_URL" "https://api-mse.tyrion.space"
+  set_env_value "APP_BASE_URL" "https://mse.paper.tyrion.space"
   set_env_default "MSE_DATABASE_URL" "sqlite:////app/data/mse.db"
   set_env_value "PDF_CONVERTER_MODE" "docker"
   set_env_value "MSE_ALLOW_MOCK_FALLBACK" "0"
@@ -123,6 +123,7 @@ EOF
   set_env_default "MSE_REVISION_REMINDER_DRY_RUN" "0"
   append_cors_origin "https://api-mse.tyrion.space"
   append_cors_origin "http://api-mse.tyrion.space"
+  append_cors_origin "https://mse.paper.tyrion.space"
   chmod 600 "$ENV_FILE"
 }
 

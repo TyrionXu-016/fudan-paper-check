@@ -9,6 +9,7 @@
 | 部署分支 | `mse-tyrion` |
 | API 容器端口 | `127.0.0.1:18083` -> 8000 |
 | 后端域名 | `api-mse.tyrion.space` |
+| 前端域名 | `mse.paper.tyrion.space` |
 | 服务器 IP | `114.55.139.240` |
 
 这是一套独立的第二项目部署，不复用 `/opt/fudan-pager-check`，不占用旧服务的 `18082` 端口，也不修改旧域名的 Nginx 配置。
@@ -78,7 +79,8 @@ curl -H "Host: api-mse.tyrion.space" http://127.0.0.1/health
 - `MSE_ALLOW_MOCK_FALLBACK=0`
 - `MINERU_IMAGE=fudan-pager-mse-mineru`
 - `MAKER_IMAGE=fudan-pager-mse-maker`
-- `CORS_ORIGINS` 追加 `api-mse.tyrion.space`
+- `APP_BASE_URL=https://mse.paper.tyrion.space`
+- `CORS_ORIGINS` 追加 `api-mse.tyrion.space` 和 `mse.paper.tyrion.space`
 
 飞书/企业微信 Webhook 可暂不配置。DeepSeek、SMTP 如需 live 能力，在服务器 `deploy/.env.prod` 中配置 `LLM_API_KEY`、`NOTIFIER=smtp` 和 `SMTP_*` 后重新运行部署脚本。
 
