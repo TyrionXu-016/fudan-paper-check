@@ -264,6 +264,7 @@ def _parse_html_tables(content: str) -> list[TableData]:
 def _parse_references(lines: list[str]) -> list[Reference]:
     refs: list[Reference] = []
     in_refs = False
+    next_index = 1
     for line in lines:
         stripped = line.strip()
         if "参考文献" in line or stripped.lower() in {"references", "bibliography"}:
@@ -274,9 +275,30 @@ def _parse_references(lines: list[str]) -> list[Reference]:
         if _is_section_heading_line(stripped) and refs:
             break
         m = re.match(r"^-\s*\[(\d+)\]\s*(.+)$", stripped)
+        if not m:
+            m = re.match(r"^\[(\d+)\]\s*(.+)$", stripped)
+        if not m:
+            m = re.match(r"^(\d+)[\].)]\s+(.+)$", stripped)
         if m:
-            refs.append(Reference(index=int(m.group(1)), raw_text=m.group(2).strip()))
+            index = int(m.group(1))
+            refs.append(Reference(index=index, raw_text=m.group(2).strip()))
+            next_index = max(next_index, index + 1)
+        elif _looks_like_reference_entry(stripped):
+            refs.append(Reference(index=next_index, raw_text=stripped))
+            next_index += 1
     return refs
+
+
+def _looks_like_reference_entry(text: str) -> bool:
+    if len(text) < 20:
+        return False
+    if not re.search(r"\b(19|20)\d{2}\b", text):
+        return False
+    if re.match(r"^[A-Z][A-Za-z' -]+(?:,\s*[A-Z]| [A-Z]\.)", text):
+        return True
+    if re.match(r"^[\u4e00-\u9fff]{2,4}[,.，]", text):
+        return True
+    return bool(re.search(r"\.\s+[A-Z][A-Za-z].+\b(19|20)\d{2}\b", text))
 
 
 def _parse_citations(lines: list[str], sections: list[Section]) -> list[Citation]:

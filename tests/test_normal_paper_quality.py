@@ -4,7 +4,17 @@ from checks.consistency import ConsistencyChecker
 from checks.format import FormatChecker
 from checks.structure import StructureChecker
 from parser.fusion import DualSourceFusionParser
-from schema.models import Block, BlockType, PaperDocument, PaperMeta, Section, SectionKind
+from schema.models import (
+    Block,
+    BlockType,
+    CheckCategory,
+    Issue,
+    IssueSeverity,
+    PaperDocument,
+    PaperMeta,
+    Section,
+    SectionKind,
+)
 
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -152,3 +162,113 @@ def test_reference_section_text_is_not_reported_as_empty():
     issues = StructureChecker("generic").check(doc)
 
     assert "STRUCT_EMPTY_REFERENCES" not in _codes(issues)
+
+
+def test_plain_english_references_are_structured_sequentially():
+    content = """
+Title
+
+Bibliography
+Doe J. Neural font transfer. Journal, 2017.
+Smith A. Deep learning for glyphs. Conference, 2018.
+""".strip()
+
+    doc = DualSourceFusionParser().parse(content)
+
+    assert [ref.index for ref in doc.references] == [1, 2]
+    assert doc.references[0].raw_text.startswith("Doe J.")
+
+
+def test_ocr_number_space_warning_is_aggregated_and_ignores_doi():
+    doc = PaperDocument(
+        meta=PaperMeta(doi="10. 12141/j. issn. 1000-565X. 250274"),
+        blocks=[
+            Block(
+                id="blk_1",
+                type=BlockType.PARAGRAPH,
+                section_id="sec_other",
+                line_start=1,
+                line_end=1,
+                text="doi:10. 12141/j. issn. 1000-565X. 250274",
+                raw="doi:10. 12141/j. issn. 1000-565X. 250274",
+            ),
+            Block(
+                id="blk_2",
+                type=BlockType.PARAGRAPH,
+                section_id="sec_other",
+                line_start=2,
+                line_end=2,
+                text="RMSE 为 42. 29，WMAPE 为 4. 18%。",
+                raw="RMSE 为 42. 29，WMAPE 为 4. 18%。",
+            ),
+        ],
+    )
+
+    ocr_issues = [
+        issue
+        for issue in FormatChecker("scut_natural_science").check(doc)
+        if issue.code == "FORMAT_OCR_NUMBER_SPACE"
+    ]
+
+    assert len(ocr_issues) == 1
+    assert "42. 29" in ocr_issues[0].evidence
+    assert "10. 12141" not in ocr_issues[0].evidence
+
+
+def test_abbreviation_definition_accepts_full_name_before_abbrev():
+    body = (
+        "本文提出一种集成深度学习模型(Integrated Deep Learning Model, IDLM)，"
+        "随后使用 IDLM 进行预测。"
+    )
+    doc = PaperDocument(
+        blocks=[
+            Block(
+                id="blk_1",
+                type=BlockType.PARAGRAPH,
+                section_id="sec_other",
+                line_start=1,
+                line_end=1,
+                text=body,
+                raw=body,
+            )
+        ],
+    )
+
+    issues = ConsistencyChecker(llm_enabled=False).check(doc)
+
+    assert "CONSIST_ABBREV_UNDEFINED" not in _codes(issues)
+
+
+def test_abbreviation_definition_accepts_abbrev_before_chinese_descriptor():
+    body = "利用 ADF 平稳性检验将流量数据划分为平稳和非平稳序列。"
+    doc = PaperDocument(
+        blocks=[
+            Block(
+                id="blk_1",
+                type=BlockType.PARAGRAPH,
+                section_id="sec_other",
+                line_start=1,
+                line_end=1,
+                text=body,
+                raw=body,
+            )
+        ],
+    )
+
+    issues = ConsistencyChecker(llm_enabled=False).check(doc)
+
+    assert "CONSIST_ABBREV_UNDEFINED" not in _codes(issues)
+
+
+def test_legacy_llm_issue_type_is_loaded_as_logic_issue():
+    issue = Issue.model_validate(
+        {
+            "issue_type": "llm",
+            "code": "LEGACY_LLM",
+            "category": CheckCategory.CONSISTENCY,
+            "severity": IssueSeverity.INFO,
+            "message": "legacy issue",
+        }
+    )
+
+    assert issue.issue_type and issue.issue_type.value == "logic_contradiction"

@@ -147,12 +147,14 @@ class ConsistencyChecker(BaseChecker):
 
     def _check_abbreviations(self, body: str) -> list[Issue]:
         issues: list[Issue] = []
+        reported: set[str] = set()
         for abbrev in ABBREV_PATTERN.findall(body):
-            pattern = rf"{abbrev}\s*[（(][^）)]+[）)]"
+            if abbrev in reported:
+                continue
             if abbrev in {"RMSE", "WMAPE", "ADF", "IDLM"}:
                 first_pos = body.find(abbrev)
-                before = body[max(0, first_pos - 80) : first_pos + len(abbrev) + 40]
-                if not re.search(pattern, before) and first_pos >= 0:
+                before = body[max(0, first_pos - 120) : first_pos + len(abbrev) + 60]
+                if first_pos >= 0 and not self._abbrev_defined_nearby(abbrev, before):
                     issues.append(
                         Issue(
                             code="CONSIST_ABBREV_UNDEFINED",
@@ -162,7 +164,19 @@ class ConsistencyChecker(BaseChecker):
                             evidence=before[:100],
                         )
                     )
+                    reported.add(abbrev)
         return issues
+
+    @staticmethod
+    def _abbrev_defined_nearby(abbrev: str, context: str) -> bool:
+        escaped = re.escape(abbrev)
+        patterns = [
+            rf"{escaped}\s*[（(][^）)]+[）)]",
+            rf"{escaped}\s*[\u4e00-\u9fff]{{2,20}}(?:检验|模型|网络|方法|算法|指标)",
+            rf"[A-Z][A-Za-z-]+(?:\s+[A-Z]?[A-Za-z-]+){{1,8}}\s*,\s*{escaped}\b",
+            rf"[\u4e00-\u9fffA-Za-z][^，,。；;（）()]{{2,60}}[（(]\s*{escaped}\s*[）)]",
+        ]
+        return any(re.search(pattern, context) for pattern in patterns)
 
     def _rule_coverage_check(self, abstract: str) -> list[Issue]:
         issues: list[Issue] = []

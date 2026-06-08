@@ -73,15 +73,31 @@ class FormatChecker(BaseChecker):
 
         ocr_pat = self.warnings.get("ocr_space_in_number")
         if ocr_pat:
-            for m in re.finditer(ocr_pat, full_text):
+            evidences: list[str] = []
+            seen: set[str] = set()
+            first_line: int | None = None
+            for block in doc.blocks:
+                raw = block.raw or block.text
+                if "doi:" in raw.lower():
+                    continue
+                for m in re.finditer(ocr_pat, raw):
+                    evidence = m.group(0)
+                    if evidence in seen:
+                        continue
+                    seen.add(evidence)
+                    evidences.append(evidence)
+                    if first_line is None:
+                        first_line = block.line_start
+            if evidences:
                 issues.append(
                     Issue(
                         code="FORMAT_OCR_NUMBER_SPACE",
                         category=self.category,
                         severity=IssueSeverity.WARNING,
-                        message="数值中可能存在 OCR 多余空格",
+                        line=first_line,
+                        message=f"检测到 {len(evidences)} 处数值中可能存在 OCR 多余空格",
                         suggestion="检查并合并数字中的空格，如 42. 29 → 42.29",
-                        evidence=m.group(0),
+                        evidence="; ".join(evidences[:12]),
                     )
                 )
 

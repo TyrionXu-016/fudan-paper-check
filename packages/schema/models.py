@@ -3,7 +3,7 @@ from __future__ import annotations
 from enum import Enum
 from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 class SectionKind(str, Enum):
@@ -190,6 +190,13 @@ class Issue(BaseModel):
     message: str
     suggestion: str = ""
     evidence: str = ""
+
+    @field_validator("issue_type", mode="before")
+    @classmethod
+    def normalize_legacy_issue_type(cls, value):
+        if value == "llm":
+            return IssueType.LOGIC_CONTRADICTION
+        return value
 
 
 class ReportSummary(BaseModel):
