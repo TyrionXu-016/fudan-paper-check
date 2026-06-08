@@ -39,6 +39,15 @@ cd /opt/fudan-pager-check-mse
 DEPLOY_BRANCH=mse-tyrion ./deploy/git-pull-deploy.sh
 ```
 
+如果服务器上已经存在 `fudan-pager-mse-maker` 与 `fudan-pager-mse-mineru` 转换镜像，只需要热修 API/worker，可跳过转换镜像重建：
+
+```bash
+cd /opt/fudan-pager-check-mse
+SKIP_CONVERTER_BUILD=1 DEPLOY_BRANCH=mse-tyrion ./deploy/git-pull-deploy.sh
+```
+
+该模式适合 MSE 小内存机器上的生产热修。首次部署或转换镜像 Dockerfile 发生变化时不要跳过。
+
 ## 自动部署
 
 `deploy/install-auto-deploy.sh` 安装 systemd timer，每 60 秒检查一次 `origin/mse-tyrion`。当前分支有新提交并推送后，服务器自动 `git pull` 并重新部署后端。

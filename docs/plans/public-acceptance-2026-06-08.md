@@ -122,6 +122,47 @@ attempt=5 HTTP=000 time_total=10.006382
 
 公网前端可访问，基础账号/项目/邀请 API 可工作；但 PDF 上传后的生产解析链路失败，并且上传期间 API 健康检查出现持续超时。当前部署不能视为 MSE 上传分析流程可用。
 
+## 修复记录
+
+执行时间：2026-06-08 21:45-22:30 CST。
+
+根因定位：
+
+- API 日志显示上传期间出现 `redis connection error redis:6379` 与 DNS 临时解析失败，API 入队失败后落入 inline fallback。
+- 生产配置为 `PDF_CONVERTER_MODE=docker`、`MSE_ALLOW_MOCK_FALLBACK=0`，但 API 容器不具备 Docker 转换能力，因此 inline 处理触发 `PDF conversion requires docker ...`。
+- worker 容器虽然能连接 Redis，但镜像内没有 Docker CLI；仅挂载 `/var/run/docker.sock` 仍无法执行 maker/mineru 转换容器。
+- MSE 主机资源紧张：约 1.7 GiB 内存，重建 MinerU 转换镜像时 SSH banner 与后端 `/health` 均出现超时。
+
+代码修复：
+
+- `5054ff3 fix: restore production mse worker conversion`
+  - 生产 strict 模式下，API 入队失败不再 inline 处理 PDF，而是返回 `503 queue unavailable`，避免上传请求长时间占用 API 进程。
+  - worker `arq` job timeout 提升到 `WORKER_JOB_TIMEOUT_SECONDS=2400`。
+- `04322bf fix: stabilize production deploy worker docker access`
+  - worker 挂载 `/var/run/docker.sock` 与宿主机 `/usr/bin/docker`，让 Docker 转换逻辑在 worker 容器内可执行。
+  - 生产部署脚本默认禁用 BuildKit，避免该机器上 buildx 构建转换镜像卡死。
+- `78b06ab fix: allow skipping converter rebuilds during deploy`
+  - 部署脚本新增 `SKIP_CONVERTER_BUILD=1`，已有 maker/mineru 镜像时可只重建 API/worker。
+
+本地回归：
+
+```text
+PYTHONPATH=packages:apps python3 -m pytest \
+  tests/test_mse_converter_strict.py \
+  tests/test_mse_final_live_script.py \
+  tests/test_mse_quasi_prod_script.py \
+  tests/test_mse_core_loop.py -q
+
+15 passed
+```
+
+生产部署状态：
+
+- `mse-tyrion` 已推送至 `78b06ab`。
+- 2026-06-08 22:05 左右手动部署先执行转换镜像重建；maker 镜像构建完成，MinerU 镜像构建期间主机负载升高，公网 `/health` 与 SSH 登录均超时。
+- 已终止本地部署 SSH 会话；远端 `git rev-parse --short HEAD` 一度确认到 `04322bf`，且未发现残留 `docker build` 进程。
+- 截至 2026-06-08 22:30，SSH 仍在 banner 阶段超时，`https://api-mse.tyrion.space/health` 仍超时；尚未能执行 `SKIP_CONVERTER_BUILD=1` 的轻量部署，因此公网复测未完成。
+
 ## 后续复测建议
 
 修复 worker/Redis/inline fallback 问题后，按以下顺序复测：
