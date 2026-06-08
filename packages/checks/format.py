@@ -6,6 +6,13 @@ from checks.base import BaseChecker, load_journal_profile
 from schema.models import CheckCategory, Issue, IssueSeverity, PaperDocument
 
 
+def _normalize_identifier_spacing(text: str) -> str:
+    text = re.sub(r"(?<=[A-Za-z0-9])\.\s+(?=[A-Za-z0-9])", ".", text)
+    text = re.sub(r"(?<=[A-Za-z0-9])/\s+(?=[A-Za-z0-9])", "/", text)
+    text = re.sub(r"(?<=[A-Za-z0-9])-\s+(?=[A-Za-z0-9])", "-", text)
+    return text
+
+
 class FormatChecker(BaseChecker):
     category = CheckCategory.FORMAT
 
@@ -19,7 +26,8 @@ class FormatChecker(BaseChecker):
         full_text = "\n".join(b.raw for b in doc.blocks)
 
         if self.patterns.get("doi") and doc.meta.doi:
-            if not re.search(self.patterns["doi"], full_text, re.I):
+            normalized_full_text = _normalize_identifier_spacing(full_text)
+            if not re.search(self.patterns["doi"], normalized_full_text, re.I):
                 issues.append(
                     Issue(
                         code="FORMAT_DOI_PATTERN",

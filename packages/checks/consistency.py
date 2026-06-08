@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import os
 import re
+from decimal import Decimal, InvalidOperation
 from typing import Any
 
 import httpx
@@ -15,7 +16,7 @@ ABBREV_PATTERN = re.compile(
     r"\b(ARIMA|SVR|RF|KNN|BiLSTM|CNN|LSTM|GRU|TCN|IDLM|ADF|RMSE|WMAPE)\b"
 )
 NUMERIC_PATTERN = re.compile(
-    r"(\d+(?:\.\s*\d+)?(?:±\s*\d+(?:\.\s*\d+)?)?)\s*(%|pcu|km/h)?",
+    r"(\d+(?:\.\s*\d+)?(?:\s*±\s*\d+(?:\.\s*\d+)?)?)\s*(%|pcu|km/h)?",
     re.I,
 )
 
@@ -48,6 +49,67 @@ class ConsistencyChecker(BaseChecker):
     def _normalize_number(self, value: str) -> str:
         return re.sub(r"\s+", "", value)
 
+    def _number_signature(self, value: str) -> tuple[Decimal, str] | None:
+        normalized = self._normalize_number(value)
+        match = re.match(r"(\d+(?:\.\d+)?)", normalized)
+        if not match:
+            return None
+        try:
+            number = Decimal(match.group(1))
+        except InvalidOperation:
+            return None
+        unit_match = re.search(r"(pcu|km/h|%)", normalized, re.I)
+        unit = unit_match.group(1).lower() if unit_match else ""
+        return number.normalize(), unit
+
+    def _number_found_in_pool(self, raw: str, search_pool: str) -> bool:
+        normalized = self._normalize_number(raw)
+        pool_norm = self._normalize_number(search_pool)
+        if normalized in pool_norm or raw in search_pool:
+            return True
+
+        target = self._number_signature(raw)
+        if not target:
+            return False
+        target_value, target_unit = target
+        for candidate in NUMERIC_PATTERN.finditer(search_pool):
+            signature = self._number_signature(candidate.group(0))
+            if not signature:
+                continue
+            value, unit = signature
+            units_compatible = not target_unit or not unit or target_unit == unit
+            if value == target_value and units_compatible:
+                return True
+        return False
+
+    def _derived_percentage_found(self, raw: str, search_pool: str) -> bool:
+        target = self._number_signature(raw)
+        if not target or target[1] != "%":
+            return False
+
+        target_value = target[0]
+        values: list[Decimal] = []
+        seen: set[Decimal] = set()
+        for candidate in NUMERIC_PATTERN.finditer(search_pool):
+            signature = self._number_signature(candidate.group(0))
+            if not signature:
+                continue
+            value, _unit = signature
+            if value <= 0 or value > Decimal("10000") or value in seen:
+                continue
+            seen.add(value)
+            values.append(value)
+
+        tolerance = Decimal("0.25")
+        for larger in values:
+            for smaller in values:
+                if larger <= smaller:
+                    continue
+                reduction = (larger - smaller) / larger * Decimal("100")
+                if abs(reduction - target_value) <= tolerance:
+                    return True
+        return False
+
     def _check_abstract_numbers(
         self, abstract: str, experiment: str, conclusion: str
     ) -> list[Issue]:
@@ -61,8 +123,13 @@ class ConsistencyChecker(BaseChecker):
             if "%" not in raw and "pcu" not in raw.lower():
                 continue
             normalized = self._normalize_number(raw)
-            pool_norm = self._normalize_number(search_pool)
-            if normalized not in pool_norm and raw not in search_pool:
+            context = abstract[max(0, match.start() - 20) : match.end() + 20]
+            derived_ok = (
+                "%" in raw
+                and any(word in context for word in ["降低", "提高", "提升", "下降", "减少", "增大"])
+                and self._derived_percentage_found(raw, search_pool)
+            )
+            if not (self._number_found_in_pool(raw, search_pool) or derived_ok):
                 issues.append(
                     Issue(
                         code="CONSIST_ABSTRACT_NUMBER",

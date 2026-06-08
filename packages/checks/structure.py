@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import re
 
-from checks.base import BaseChecker, load_journal_profile
+from checks.base import BaseChecker, load_journal_profile, section_text
 from schema.models import CheckCategory, Issue, IssueSeverity, PaperDocument, SectionKind
 
 
@@ -16,12 +16,23 @@ class StructureChecker(BaseChecker):
         issues: list[Issue] = []
         kinds = {s.kind for s in doc.sections}
 
+        def has_required_section(kind: SectionKind) -> bool:
+            if kind in kinds:
+                return True
+            if kind == SectionKind.ABSTRACT:
+                return bool(doc.meta.abstract)
+            if kind == SectionKind.KEYWORDS:
+                return bool(doc.meta.keywords)
+            if kind == SectionKind.REFERENCES:
+                return bool(doc.references)
+            return False
+
         for req in self.profile.get("required_sections", []):
             try:
                 sk = SectionKind(req)
             except ValueError:
                 continue
-            if sk not in kinds and not (sk == SectionKind.ABSTRACT and doc.meta.abstract):
+            if not has_required_section(sk):
                 issues.append(
                     Issue(
                         code="STRUCT_MISSING_SECTION",
@@ -33,7 +44,7 @@ class StructureChecker(BaseChecker):
                     )
                 )
 
-        if not doc.meta.abstract:
+        if not (doc.meta.abstract or section_text(doc, "abstract").strip()):
             issues.append(
                 Issue(
                     code="STRUCT_MISSING_ABSTRACT",
@@ -107,17 +118,5 @@ class StructureChecker(BaseChecker):
                         evidence=f"表 {n}",
                     )
                 )
-
-        if doc.meta.keywords:
-            issues.append(
-                Issue(
-                    code="STRUCT_KEYWORDS_OK",
-                    category=self.category,
-                    severity=IssueSeverity.INFO,
-                    section="keywords",
-                    message=f"检测到 {len(doc.meta.keywords)} 个关键词",
-                    evidence="; ".join(doc.meta.keywords),
-                )
-            )
 
         return issues

@@ -53,16 +53,32 @@ def _heading_level(line: str) -> int:
     return len(match.group(1)) if match else 0
 
 
+def _strip_heading_markup(line: str) -> str:
+    return re.sub(r"^#+\s*", "", line.strip()).strip()
+
+
 def _classify_section(title: str) -> SectionKind:
     t = title.lower()
+    compact = re.sub(r"\s+", "", title)
+    numbered = re.match(r"^(\d+)(?:\.\d+)*", compact)
     if "摘要" in title or "abstract" in t:
         return SectionKind.ABSTRACT
-    if "关键词" in title or "key word" in t:
+    if "关键词" in title or "key word" in t or "keyword" in t:
         return SectionKind.KEYWORDS
-    if "参考文献" in title or "reference" in t:
+    if "参考文献" in title or "reference" in t or "bibliography" in t:
         return SectionKind.REFERENCES
     if "结论" in title or "conclusion" in t:
         return SectionKind.CONCLUSION
+    if "introduction" in t or "引言" in title:
+        return SectionKind.INTRO
+    if numbered:
+        top_level = numbered.group(1)
+        if top_level == "3":
+            return SectionKind.EXPERIMENT
+        if top_level == "2":
+            return SectionKind.METHOD
+        if top_level == "1":
+            return SectionKind.METHOD
     if re.match(r"^\d+\s", title) or "实验" in title or "结果" in title:
         if "实验" in title or "结果" in title or title.startswith("3"):
             return SectionKind.EXPERIMENT
@@ -77,6 +93,52 @@ def _classify_section(title: str) -> SectionKind:
     return SectionKind.OTHER
 
 
+def _is_bare_section_heading(line: str) -> bool:
+    title = _strip_heading_markup(line)
+    if not title or len(title) > 100:
+        return False
+    normalized = re.sub(r"\s+", " ", title).strip().lower()
+    if normalized in {
+        "abstract",
+        "keywords",
+        "key words",
+        "references",
+        "bibliography",
+        "contents",
+        "acknowledgements",
+        "acknowledgments",
+    }:
+        return True
+    if title in {"摘要", "关键词", "参考文献"}:
+        return True
+    if re.match(r"^\d+(?:\.\d+)*\s+[A-Za-z][\w\s,;:()/-]{2,}$", title):
+        return True
+    return bool(re.match(r"^\d+(?:\.\s*\d+)*\s*[\u4e00-\u9fff][^。；;]{1,40}$", title))
+
+
+def _is_section_heading_line(line: str) -> bool:
+    stripped = line.strip()
+    return bool(_heading_level(stripped) or _is_bare_section_heading(stripped))
+
+
+def _collect_until_next_heading(lines: list[str], start: int) -> str:
+    chunks: list[str] = []
+    for line in lines[start:]:
+        stripped = line.strip()
+        if not stripped:
+            if chunks:
+                break
+            continue
+        if _is_section_heading_line(stripped):
+            break
+        chunks.append(stripped)
+    return _clean_text(" ".join(chunks))
+
+
+def _split_keywords(raw: str) -> list[str]:
+    return [k.strip() for k in re.split(r"[;；,，]", raw) if k.strip()]
+
+
 def _extract_meta(lines: list[str]) -> PaperMeta:
     meta = PaperMeta()
     full = "\n".join(lines)
@@ -85,12 +147,18 @@ def _extract_meta(lines: list[str]) -> PaperMeta:
     if title_match and "网络首发" not in title_match.group(1):
         meta.title = _clean_text(title_match.group(1))
 
-    for line in lines:
-        if line.startswith("摘 要:") or line.startswith("摘 要："):
+    for idx, line in enumerate(lines):
+        stripped = line.strip()
+        normalized = stripped.lower()
+        if stripped.startswith("摘 要:") or stripped.startswith("摘 要："):
             meta.abstract = _clean_text(line.split(":", 1)[-1].split("：", 1)[-1])
-        elif line.startswith("关键词:") or line.startswith("关键词："):
+        elif normalized == "abstract":
+            meta.abstract = _collect_until_next_heading(lines, idx + 1)
+        elif stripped.startswith("关键词:") or stripped.startswith("关键词："):
             raw = line.split(":", 1)[-1].split("：", 1)[-1]
-            meta.keywords = [k.strip() for k in re.split(r"[;；]", raw) if k.strip()]
+            meta.keywords = _split_keywords(raw)
+        elif normalized in {"keywords", "key words"}:
+            meta.keywords = _split_keywords(_collect_until_next_heading(lines, idx + 1))
         elif "doi:" in line.lower():
             meta.doi = re.sub(r".*doi:\s*", "", line, flags=re.I).strip()
         elif "中图分类号" in line:
@@ -113,37 +181,57 @@ def _extract_meta(lines: list[str]) -> PaperMeta:
 
 
 def _parse_markdown_tables(lines: list[str]) -> list[TableData]:
-    tables: list[TableData] = []
+    tables_by_number: dict[int, TableData] = {}
+    order: list[int] = []
     i = 0
     while i < len(lines):
         line = lines[i]
-        cap_match = re.match(r"^表\s*(\d+)\s*(.*)$", line.strip())
-        if cap_match and i + 2 < len(lines) and "|" in lines[i + 2]:
+        stripped = line.strip()
+        cap_match = re.match(r"^表\s*(\d+)\s*(.*)$", stripped)
+        if not cap_match:
+            cap_match = re.match(r"^Table\s*(\d+)\s*(.*)$", stripped, re.I)
+        if cap_match:
             number = int(cap_match.group(1))
             caption = cap_match.group(2).strip() or f"表{number}"
-            header_line = lines[i + 2]
-            sep_line = lines[i + 3] if i + 3 < len(lines) else ""
-            if re.match(r"^\|[-:\s|]+\|$", sep_line):
+            table_start = next(
+                (
+                    j
+                    for j in range(i + 1, min(len(lines), i + 8))
+                    if lines[j].strip().startswith("|")
+                ),
+                None,
+            )
+            headers: list[str] = []
+            rows: list[list[str]] = []
+            next_i = i + 1
+            if table_start is not None:
+                header_line = lines[table_start]
+                sep_line = lines[table_start + 1] if table_start + 1 < len(lines) else ""
                 headers = [c.strip() for c in header_line.strip("|").split("|")]
-                rows: list[list[str]] = []
-                j = i + 4
+                j = table_start + 1
+                if re.match(r"^\|[-:\s|]+\|$", sep_line):
+                    j += 1
                 while j < len(lines) and lines[j].strip().startswith("|"):
                     rows.append([c.strip() for c in lines[j].strip("|").split("|")])
                     j += 1
-                tables.append(
-                    TableData(
-                        id=f"table_{number}",
-                        caption=caption,
-                        number=number,
-                        headers=headers,
-                        rows=rows,
-                        source="maker",
-                    )
-                )
-                i = j
-                continue
+                next_i = j
+            table = TableData(
+                id=f"table_{number}",
+                caption=caption,
+                number=number,
+                headers=headers,
+                rows=rows,
+                source="maker",
+            )
+            if number not in tables_by_number:
+                order.append(number)
+                tables_by_number[number] = table
+            elif rows and not tables_by_number[number].rows:
+                tables_by_number[number] = table
+            i = next_i
+            continue
         i += 1
-    return tables
+    return [tables_by_number[n] for n in order]
 
 
 def _parse_html_tables(content: str) -> list[TableData]:
@@ -177,14 +265,15 @@ def _parse_references(lines: list[str]) -> list[Reference]:
     refs: list[Reference] = []
     in_refs = False
     for line in lines:
-        if "参考文献" in line:
+        stripped = line.strip()
+        if "参考文献" in line or stripped.lower() in {"references", "bibliography"}:
             in_refs = True
             continue
         if not in_refs:
             continue
-        if line.startswith("# ") and "reference" in line.lower():
+        if _is_section_heading_line(stripped) and refs:
             break
-        m = re.match(r"^-\s*\[(\d+)\]\s*(.+)$", line.strip())
+        m = re.match(r"^-\s*\[(\d+)\]\s*(.+)$", stripped)
         if m:
             refs.append(Reference(index=int(m.group(1)), raw_text=m.group(2).strip()))
     return refs
@@ -218,8 +307,11 @@ def _parse_citations(lines: list[str], sections: list[Section]) -> list[Citation
 def _parse_figures(lines: list[str]) -> list[FigureRef]:
     figures: list[FigureRef] = []
     for i, line in enumerate(lines, start=1):
-        img = re.match(r"^!\[\]\((.+)\)$", line.strip())
-        cap = re.match(r"^图\s*(\d+)\s*(.*)$", line.strip())
+        stripped = line.strip()
+        img = re.match(r"^!\[\]\((.+)\)$", stripped)
+        cap = re.match(r"^图\s*(\d+)\s*(.*)$", stripped)
+        if not cap:
+            cap = re.match(r"^Fig\.?\s*(\d+)\s*(.*)$", stripped, re.I)
         if img:
             figures.append(FigureRef(id=f"fig_line_{i}", path=img.group(1), line=i))
         elif cap:
@@ -300,56 +392,42 @@ class DualSourceFusionParser:
 
     def _build_sections(self, lines: list[str]) -> list[Section]:
         sections: list[Section] = []
-        current_id: str | None = None
-        abstract_line: int | None = None
+
+        def append_section(kind: SectionKind, title: str, level: int, line_no: int) -> None:
+            if sections:
+                sections[-1].end_line = line_no - 1
+            sec_id = f"sec_{len(sections)}"
+            sections.append(
+                Section(
+                    id=sec_id,
+                    kind=kind,
+                    title=title,
+                    level=level,
+                    start_line=line_no,
+                    end_line=len(lines),
+                )
+            )
 
         for i, line in enumerate(lines, start=1):
-            if line.startswith("摘 要"):
-                abstract_line = i
-                current_id = "sec_abstract"
-                sections.append(
-                    Section(
-                        id=current_id,
-                        kind=SectionKind.ABSTRACT,
-                        title="摘要",
-                        level=1,
-                        start_line=i,
-                        end_line=i,
-                    )
-                )
+            stripped = line.strip()
+            if stripped.startswith("摘 要"):
+                append_section(SectionKind.ABSTRACT, "摘要", 1, i)
+                continue
+
+            if stripped.startswith("关键词"):
+                append_section(SectionKind.KEYWORDS, "关键词", 1, i)
                 continue
 
             level = _heading_level(line)
             if level:
-                title = re.sub(r"^#+\s*", "", line).strip()
+                title = _strip_heading_markup(line)
                 kind = _classify_section(title)
-                sec_id = f"sec_{len(sections)}"
-                if sections:
-                    sections[-1].end_line = i - 1
-                sections.append(
-                    Section(
-                        id=sec_id,
-                        kind=kind,
-                        title=title,
-                        level=level,
-                        start_line=i,
-                        end_line=len(lines),
-                    )
-                )
-                current_id = sec_id
+                append_section(kind, title, level, i)
+                continue
 
-        if abstract_line and not any(s.kind == SectionKind.ABSTRACT for s in sections):
-            sections.insert(
-                0,
-                Section(
-                    id="sec_abstract",
-                    kind=SectionKind.ABSTRACT,
-                    title="摘要",
-                    level=1,
-                    start_line=abstract_line,
-                    end_line=abstract_line,
-                ),
-            )
+            if _is_bare_section_heading(stripped):
+                title = _strip_heading_markup(stripped)
+                append_section(_classify_section(title), title, 1, i)
 
         if sections:
             sections[-1].end_line = len(lines)
@@ -368,7 +446,7 @@ class DualSourceFusionParser:
 
         for i, line in enumerate(lines, start=1):
             btype = BlockType.PARAGRAPH
-            if _heading_level(line):
+            if _heading_level(line) or _is_bare_section_heading(line.strip()):
                 btype = BlockType.HEADING
             elif line.strip().startswith("$$") or line.strip().startswith("$"):
                 btype = BlockType.FORMULA
