@@ -1,0 +1,7 @@
+代码仓库链接：
+https://github.com/TyrionXu-016/fudan-paper-check
+
+说明：
+1. 如果仓库为私有仓库，请在提交前确认评审者具备访问权限。
+2. 仓库中已包含后端、前端、Agent、RAG、测试、部署说明和本次中期报告目录。
+3. 请勿在仓库或提交说明中填写真实 API Key、账号密码、JWT Secret、服务器密码或私有 Token。
