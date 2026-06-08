@@ -27,6 +27,7 @@ class PDFConverter:
         self._docker_convert(pdf_path, out_dir, maker_out, mineru_out)
         if not maker_out.exists() or maker_out.stat().st_size == 0:
             raise RuntimeError(f"maker converter produced no output: {maker_out}")
+        _normalise_maker_markdown(maker_out, pdf_path)
 
         mineru = mineru_out if mineru_out.exists() and mineru_out.stat().st_size > 0 else None
         return maker_out, mineru
@@ -124,3 +125,30 @@ class PDFConverter:
                 )
                 return
             raise RuntimeError(f"{label} converter failed for image {image}: {detail}") from exc
+
+
+def _normalise_maker_markdown(md_path: Path, pdf_path: Path) -> None:
+    lines = md_path.read_text(encoding="utf-8").splitlines()
+    if not lines:
+        return
+
+    first_heading = next((i for i, line in enumerate(lines) if line.startswith("# ")), None)
+    if first_heading is None:
+        lines = [f"# {pdf_path.stem}", "", "## 正文", "", *lines]
+        md_path.write_text("\n".join(lines).rstrip() + "\n", encoding="utf-8")
+        return
+
+    changed = False
+    title = lines[first_heading][2:].strip().lower()
+    if title.startswith("converted by ") or title.startswith("converted from "):
+        lines[first_heading] = f"# {pdf_path.stem}"
+        changed = True
+
+    if not any(line.startswith("## ") for line in lines):
+        insert_at = first_heading + 1
+        while insert_at < len(lines) and not lines[insert_at].strip():
+            insert_at += 1
+        lines[insert_at:insert_at] = ["", "## 正文", ""]
+        changed = True
+    if changed:
+        md_path.write_text("\n".join(lines).rstrip() + "\n", encoding="utf-8")
