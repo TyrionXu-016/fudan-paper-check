@@ -19,6 +19,7 @@ from auth.mse import (
 from auth.service import get_current_user, get_optional_user, get_or_create_student
 from mse.invite import generate_invite_token, invite_target_for_project
 from mse.rule_bootstrap import bootstrap_project_default_rules
+from mse.settings import allow_mock_fallback
 from mse.issue_diff import diff_rounds
 from mse.models import (
     AcceptInviteRequest,
@@ -62,7 +63,9 @@ async def _enqueue_mse_round(project_id: str, round_id: str) -> None:
 
         redis = await create_pool(_build_redis_settings())
         await redis.enqueue_job("process_mse_round", project_id, round_id)
-    except Exception:
+    except Exception as exc:
+        if not allow_mock_fallback():
+            raise HTTPException(503, f"queue unavailable: {exc}") from exc
         from worker.mse_tasks import process_mse_round
 
         await process_mse_round({}, project_id, round_id)

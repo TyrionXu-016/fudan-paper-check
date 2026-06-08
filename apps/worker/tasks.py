@@ -160,4 +160,4 @@ class WorkerSettings:
         retry_mse_round_parse,
     ]
     redis_settings = _build_redis_settings()
-    job_timeout = 600
+    job_timeout = int(os.getenv("WORKER_JOB_TIMEOUT_SECONDS", "2400"))
