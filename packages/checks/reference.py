@@ -68,7 +68,7 @@ class ReferenceChecker(BaseChecker):
 
         seen: dict[str, int] = {}
         for ref in doc.references:
-            key = re.sub(r"\s+", "", ref.raw_text[:60])
+            key = re.sub(r"\s+", "", ref.raw_text[:180]).lower()
             if key in seen:
                 issues.append(
                     Issue(
@@ -100,4 +100,11 @@ class ReferenceChecker(BaseChecker):
         has_author = bool(re.search(r"[\u4e00-\u9fffA-Za-z]", text))
         has_year = bool(re.search(r"\b(19|20)\d{2}\b", text))
         has_journal_marker = any(m in text for m in ["[J]", "[M]", "[C]", "[D]"])
-        return has_author and (has_year or has_journal_marker)
+        has_english_venue = bool(
+            re.search(
+                r"\b(In:|Journal|Conference|Proceedings|Press|Springer|IEEE|ACM|EU Publications)\b",
+                text,
+                re.I,
+            )
+        )
+        return has_author and (has_year or has_journal_marker or has_english_venue)

@@ -215,6 +215,33 @@ New York, 2006.
     assert "REF_INCOMPLETE_ENTRY" not in _codes(ReferenceChecker().check(doc))
 
 
+def test_reference_checker_allows_same_long_author_with_different_titles():
+    content = """
+Title
+
+References
+[1] Directorate-General Education European Commission and Culture. Study on sport growth. In: EU Publications, 2013.
+[2] Directorate-General Education European Commission and Culture. The economic dimension of sport. In: EU Publications, 2015.
+""".strip()
+
+    doc = DualSourceFusionParser().parse(content)
+
+    assert "REF_DUPLICATE" not in _codes(ReferenceChecker().check(doc))
+
+
+def test_reference_checker_treats_english_venue_as_basic_field():
+    content = """
+Title
+
+References
+[1] David Roxbee Cox. The Regression Analysis of Binary Sequences. In: Journal of the
+""".strip()
+
+    doc = DualSourceFusionParser().parse(content)
+
+    assert "REF_INCOMPLETE_ENTRY" not in _codes(ReferenceChecker().check(doc))
+
+
 def test_ocr_number_space_warning_is_aggregated_and_ignores_doi():
     doc = PaperDocument(
         meta=PaperMeta(doi="10. 12141/j. issn. 1000-565X. 250274"),
