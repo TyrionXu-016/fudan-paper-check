@@ -973,22 +973,43 @@ input, textarea, select { font-family: inherit; }
   margin: 4px 0 12px;
   text-align: center;
 }
-.doc-issue-panel {
+.doc-issue-anchor {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  margin: 18px 0 26px;
-  padding: 12px 14px;
-  border: 1px solid var(--amber-500);
-  border-left-width: 4px;
-  border-radius: 8px;
+  margin: 10px 0 24px;
+  padding: 10px 12px;
+  border: 1px dashed var(--amber-500);
+  border-radius: 6px;
   background: #fffbeb;
   font-family: var(--font-ui);
+  text-indent: 0;
+}
+.doc-issue-anchor-abstract {
+  margin-top: -14px;
+  margin-bottom: 28px;
+}
+.doc-issue-anchor-references {
+  margin-top: 30px;
+  margin-bottom: 0;
 }
 .doc-issue-title {
   color: #92400e;
   font-size: 12px;
   font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.doc-issue-title::before,
+.doc-issue-title::after {
+  content: "";
+  height: 1px;
+  background: rgba(245, 158, 11, 0.5);
+  flex: 1;
+}
+.doc-issue-title::before {
+  flex: 0 0 24px;
 }
 .doc-issue-marker {
   display: grid;

@@ -16,6 +16,16 @@ const issues = useIssuesStore()
 // 真后端加载后 doc.currentPaper 是真实论文，否则回落到 mock PAPER
 const paper = computed(() => doc.currentPaper)
 const docIssues = computed(() => issues.issues.filter((issue) => issue.docLevel))
+const topDocIssues = computed(() => docIssues.value.filter((issue) => docIssuePlacement(issue) === 'top'))
+const abstractDocIssues = computed(() =>
+  docIssues.value.filter((issue) => docIssuePlacement(issue) === 'abstract'),
+)
+const referenceDocIssues = computed(() =>
+  docIssues.value.filter((issue) => docIssuePlacement(issue) === 'references'),
+)
+const referenceSectionIndex = computed(() =>
+  paper.value.sections.findIndex((sec) => isReferenceHeading(sec.heading)),
+)
 
 const bodyEl = ref<HTMLElement | null>(null)
 
@@ -53,6 +63,17 @@ function docIssueClass(issue: Issue) {
     rejected: action === 'reject',
     custom: action === 'custom',
   }
+}
+
+function docIssuePlacement(issue: Issue): 'top' | 'abstract' | 'references' {
+  const text = `${issue.location} ${issue.summary} ${issue.explain}`.toLowerCase()
+  if (/(参考文献|references|reference)/i.test(text)) return 'references'
+  if (/(摘要|abstract)/i.test(text)) return 'abstract'
+  return 'top'
+}
+
+function isReferenceHeading(heading: string) {
+  return /(参考文献|references|reference)/i.test(heading)
 }
 
 // 进入编辑器：构建/恢复内容并写入 DOM
@@ -102,10 +123,35 @@ onMounted(() => {
       <h1>{{ paper.title }}</h1>
       <div class="author">{{ paper.author }}</div>
 
-      <div v-if="docIssues.length" class="doc-issue-panel" data-doc-issues>
-        <div class="doc-issue-title">文档级问题</div>
+      <div
+        v-if="topDocIssues.length"
+        class="doc-issue-anchor"
+        data-doc-issues
+        data-doc-issue-placement="top"
+      >
+        <div class="doc-issue-title">全文检查点</div>
         <button
-          v-for="issue in docIssues"
+          v-for="issue in topDocIssues"
+          :key="issue.id"
+          class="doc-issue-marker"
+          :class="docIssueClass(issue)"
+          :data-doc-issue-id="issue.id"
+          @click="issues.setActive(issue.id)"
+        >
+          <span class="doc-issue-loc">{{ issue.location }}</span>
+          <span class="doc-issue-summary">{{ issue.summary }}</span>
+        </button>
+      </div>
+
+      <div
+        v-if="abstractDocIssues.length"
+        class="doc-issue-anchor doc-issue-anchor-abstract"
+        data-doc-issues
+        data-doc-issue-placement="abstract"
+      >
+        <div class="doc-issue-title">摘要位置</div>
+        <button
+          v-for="issue in abstractDocIssues"
           :key="issue.id"
           class="doc-issue-marker"
           :class="docIssueClass(issue)"
@@ -123,6 +169,25 @@ onMounted(() => {
       </template>
 
       <template v-for="(sec, si) in paper.sections" :key="`sec-${si}`">
+        <div
+          v-if="si === referenceSectionIndex && referenceDocIssues.length"
+          class="doc-issue-anchor doc-issue-anchor-references"
+          data-doc-issues
+          data-doc-issue-placement="references"
+        >
+          <div class="doc-issue-title">参考文献位置</div>
+          <button
+            v-for="issue in referenceDocIssues"
+            :key="issue.id"
+            class="doc-issue-marker"
+            :class="docIssueClass(issue)"
+            :data-doc-issue-id="issue.id"
+            @click="issues.setActive(issue.id)"
+          >
+            <span class="doc-issue-loc">{{ issue.location }}</span>
+            <span class="doc-issue-summary">{{ issue.summary }}</span>
+          </button>
+        </div>
         <h2>{{ sec.heading }}</h2>
         <template v-for="(para, pi) in sec.paragraphs" :key="`s-${si}-${pi}`">
           <p><ParaContent :para="para" /></p>
@@ -132,6 +197,26 @@ onMounted(() => {
           />
         </template>
       </template>
+
+      <div
+        v-if="referenceSectionIndex < 0 && referenceDocIssues.length"
+        class="doc-issue-anchor doc-issue-anchor-references"
+        data-doc-issues
+        data-doc-issue-placement="references"
+      >
+        <div class="doc-issue-title">参考文献位置</div>
+        <button
+          v-for="issue in referenceDocIssues"
+          :key="issue.id"
+          class="doc-issue-marker"
+          :class="docIssueClass(issue)"
+          :data-doc-issue-id="issue.id"
+          @click="issues.setActive(issue.id)"
+        >
+          <span class="doc-issue-loc">{{ issue.location }}</span>
+          <span class="doc-issue-summary">{{ issue.summary }}</span>
+        </button>
+      </div>
     </div>
   </div>
 </template>
