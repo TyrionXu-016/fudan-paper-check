@@ -973,6 +973,68 @@ input, textarea, select { font-family: inherit; }
   margin: 4px 0 12px;
   text-align: center;
 }
+.doc-issue-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 18px 0 26px;
+  padding: 12px 14px;
+  border: 1px solid var(--amber-500);
+  border-left-width: 4px;
+  border-radius: 8px;
+  background: #fffbeb;
+  font-family: var(--font-ui);
+}
+.doc-issue-title {
+  color: #92400e;
+  font-size: 12px;
+  font-weight: 600;
+}
+.doc-issue-marker {
+  display: grid;
+  grid-template-columns: minmax(72px, max-content) 1fr;
+  gap: 10px;
+  width: 100%;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: rgba(255,255,255,0.55);
+  color: var(--ink-2);
+  padding: 8px 10px;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+  line-height: 1.45;
+}
+.doc-issue-marker:hover {
+  background: var(--surface);
+  border-color: rgba(245, 158, 11, 0.45);
+}
+.doc-issue-marker.active {
+  background: #fde68a;
+  border-color: var(--cyan-bright);
+  outline: 2px solid var(--cyan-bright);
+  outline-offset: 1px;
+}
+.doc-issue-marker.accepted {
+  background: var(--green-100);
+  border-color: var(--green-500);
+}
+.doc-issue-marker.rejected {
+  color: var(--ink-4);
+  text-decoration: line-through;
+}
+.doc-issue-marker.custom {
+  background: var(--blue-100);
+  border-color: var(--blue-500);
+}
+.doc-issue-loc {
+  color: #92400e;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.doc-issue-summary {
+  min-width: 0;
+}
 
 /* span highlights */
 .hl {

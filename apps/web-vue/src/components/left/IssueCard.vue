@@ -31,13 +31,24 @@ function applyCustom() {
   issues.decide(props.issue.id, 'custom', customText.value)
   customMode.value = false
 }
+
+function focusIssue() {
+  issues.setActive(props.issue.id)
+  setTimeout(() => {
+    const selector = props.issue.spanId
+      ? `[data-span-id="${props.issue.spanId}"]`
+      : `[data-doc-issue-id="${props.issue.id}"], [data-doc-issues]`
+    const el = document.querySelector(selector)
+    if (el) el.scrollIntoView({ block: 'center', behavior: 'smooth' })
+  }, 50)
+}
 </script>
 
 <template>
   <div
     class="issue"
     :class="{ active: isActive, accepted: isAccepted, rejected: isRejected, custom: isCustom }"
-    @click="issues.setActive(issue.id)"
+    @click="focusIssue"
   >
     <div class="issue-tag" :style="{ background: meta.color }">{{ meta.short }}</div>
     <div class="issue-loc">

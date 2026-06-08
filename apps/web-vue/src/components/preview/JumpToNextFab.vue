@@ -9,8 +9,10 @@ function jump() {
   if (!pending) return
   issues.setActive(pending.id)
   setTimeout(() => {
-    if (!pending.spanId) return
-    const el = document.querySelector(`[data-span-id="${pending.spanId}"]`)
+    const selector = pending.spanId
+      ? `[data-span-id="${pending.spanId}"]`
+      : `[data-doc-issue-id="${pending.id}"], [data-doc-issues]`
+    const el = document.querySelector(selector)
     if (el) el.scrollIntoView({ block: 'center', behavior: 'smooth' })
   }, 50)
 }

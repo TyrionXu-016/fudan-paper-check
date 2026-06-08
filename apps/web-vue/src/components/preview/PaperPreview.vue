@@ -6,12 +6,16 @@ import EditorToolbar from './EditorToolbar.vue'
 import { useUiStore } from '../../stores/ui'
 import { useEditorStore } from '../../stores/editor'
 import { useDocStore } from '../../stores/doc'
+import { useIssuesStore } from '../../stores/issues'
+import type { Issue } from '../../types'
 
 const ui = useUiStore()
 const editor = useEditorStore()
 const doc = useDocStore()
+const issues = useIssuesStore()
 // 真后端加载后 doc.currentPaper 是真实论文，否则回落到 mock PAPER
 const paper = computed(() => doc.currentPaper)
+const docIssues = computed(() => issues.issues.filter((issue) => issue.docLevel))
 
 const bodyEl = ref<HTMLElement | null>(null)
 
@@ -39,6 +43,16 @@ function onInput() {
   debounce = setTimeout(() => {
     if (bodyEl.value) editor.commitHtml(bodyEl.value.innerHTML)
   }, 450)
+}
+
+function docIssueClass(issue: Issue) {
+  const action = issues.decisions[issue.id]?.action
+  return {
+    active: issues.activeIssueId === issue.id,
+    accepted: action === 'accept',
+    rejected: action === 'reject',
+    custom: action === 'custom',
+  }
 }
 
 // 进入编辑器：构建/恢复内容并写入 DOM
@@ -87,6 +101,21 @@ onMounted(() => {
     <div v-else class="paper" :style="scaleStyle">
       <h1>{{ paper.title }}</h1>
       <div class="author">{{ paper.author }}</div>
+
+      <div v-if="docIssues.length" class="doc-issue-panel" data-doc-issues>
+        <div class="doc-issue-title">文档级问题</div>
+        <button
+          v-for="issue in docIssues"
+          :key="issue.id"
+          class="doc-issue-marker"
+          :class="docIssueClass(issue)"
+          :data-doc-issue-id="issue.id"
+          @click="issues.setActive(issue.id)"
+        >
+          <span class="doc-issue-loc">{{ issue.location }}</span>
+          <span class="doc-issue-summary">{{ issue.summary }}</span>
+        </button>
+      </div>
 
       <template v-if="paper.abstract.length">
         <div class="abstract-label">摘 要</div>
