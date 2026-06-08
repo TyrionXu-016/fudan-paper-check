@@ -22,7 +22,7 @@ services:
       REDIS_URL: redis://redis:6379
       JWT_SECRET: ${JWT_SECRET}
       CORS_ORIGINS: ${CORS_ORIGINS:?set a comma-separated list of trusted frontend origins}
-      PDF_CONVERTER_MODE: ${PDF_CONVERTER_MODE:-mock}
+      PDF_CONVERTER_MODE: ${PDF_CONVERTER_MODE:-docker}
     volumes:
       - pager_data:/app/data
     depends_on:
@@ -40,9 +40,12 @@ services:
     environment:
       PYTHONPATH: /app/packages:/app/apps
       REDIS_URL: redis://redis:6379
-      PDF_CONVERTER_MODE: ${PDF_CONVERTER_MODE:-mock}
+      PDF_CONVERTER_MODE: ${PDF_CONVERTER_MODE:-docker}
+      MAKER_IMAGE: ${MAKER_IMAGE:-fudan-pager-mse-maker}
+      MINERU_IMAGE: ${MINERU_IMAGE:-}
     volumes:
       - pager_data:/app/data
+      - /var/run/docker.sock:/var/run/docker.sock
     depends_on:
       - redis
     networks:

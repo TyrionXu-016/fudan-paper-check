@@ -74,7 +74,9 @@ curl -H "Host: paper-api.tyrion.space" http://127.0.0.1/v1/rule_bases
 
 - `JWT_SECRET` — 生产 JWT 密钥
 - `CORS_ORIGINS` — 允许的前端来源，应包含 `https://paper.tyrion.space`
-- `PDF_CONVERTER_MODE=mock` — PDF 转换 mock（未部署 maker/mineru 镜像时）
+- `PDF_CONVERTER_MODE=docker` — PDF 走真实 Maker/MinerU 兼容镜像处理
+- `MAKER_IMAGE=fudan-pager-mse-maker` — 必需，主文本转换镜像
+- `MINERU_IMAGE=` — 可选，表格/结构补充转换镜像；未准备好时留空
 
 ## 一键部署（本地）
 

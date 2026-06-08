@@ -103,17 +103,13 @@ docker compose up --build
 设置环境变量启用 Docker 转换器：
 
 ```bash
-export MAKER_IMAGE=fudan-pager-maker
-export MINERU_IMAGE=fudan-pager-mineru
+export MAKER_IMAGE=fudan-pager-mse-maker
 export PDF_CONVERTER_MODE=docker
+# 可选：准备好 MinerU 后再启用
+# export MINERU_IMAGE=fudan-pager-mse-mineru
 ```
 
-构建 stub 镜像：
-
-```bash
-docker build -f docker/maker/Dockerfile -t fudan-pager-maker .
-docker build -f docker/mineru/Dockerfile -t fudan-pager-mineru .
-```
+生产验收必须使用真实 Maker/MinerU 兼容镜像；`docker/` 下的示例镜像仅用于本地接口联调。
 
 ### LLM 一致性检查（可选）
 

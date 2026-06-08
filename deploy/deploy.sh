@@ -37,7 +37,9 @@ if [[ ! -f deploy/.env.prod ]]; then
   cat > deploy/.env.prod <<EOF
 JWT_SECRET=\${JWT}
 CORS_ORIGINS=https://paper.tyrion.space,http://114.55.139.240,http://localhost:3000
-PDF_CONVERTER_MODE=mock
+PDF_CONVERTER_MODE=docker
+MAKER_IMAGE=fudan-pager-mse-maker
+MINERU_IMAGE=
 EOF
   chmod 600 deploy/.env.prod
 fi

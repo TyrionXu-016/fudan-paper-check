@@ -25,11 +25,14 @@ services:
     command: arq worker.tasks.WorkerSettings
     volumes:
       - .:/app
+      - /var/run/docker.sock:/var/run/docker.sock
     working_dir: /app/apps
     environment:
       PYTHONPATH: /app/packages:/app/apps
       REDIS_URL: redis://redis:6379
-      PDF_CONVERTER_MODE: mock
+      PDF_CONVERTER_MODE: docker
+      MAKER_IMAGE: ${MAKER_IMAGE:-fudan-pager-mse-maker}
+      MINERU_IMAGE: ${MINERU_IMAGE:-}
     depends_on:
       - redis
 
