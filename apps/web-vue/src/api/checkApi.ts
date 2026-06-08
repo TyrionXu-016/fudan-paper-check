@@ -103,7 +103,14 @@ async function realGetResult(taskId: string): Promise<ResultResp> {
     try {
       report = await http.get<unknown, BackendCheckReport>(`/v1/result/${taskId}`)
     } catch {
-      // /v1/result 尚未就绪 (409) 等下次轮询再试，先按 0 处理
+      // /v1/result 尚未就绪时继续轮询，避免 UI 进入“完成但空报告”的假完成态。
+      return {
+        status: 'DETECTING',
+        stage: String(t.current_stage ?? 'DONE'),
+        percent: 99,
+        issueCount: 0,
+        message: '检测结果整理中',
+      }
     }
     return {
       status: 'DONE',
