@@ -5,6 +5,7 @@
 | 文档 | 范围 | 实施优先级 |
 |------|------|------------|
 | [mse-tutoring-system.md](./mse-tutoring-system.md) | **硕士学位论文辅导系统**（多轮修订、页码定位、邮件通知、导师终审） | **P0 — 当前分支 `mse-tyrion`** |
+| [public-acceptance-2026-06-08.md](./public-acceptance-2026-06-08.md) | **公网部署验收记录**（API/前端/MSE 上传链路，含失败证据） | **P0 — 待修复后复测** |
 | [mse-prompt-design.md](./mse-prompt-design.md) | **MSE LLM 提示词精密设计**（完整 system/user、Schema、后验过滤） | **P0 — M1 与 Agent 同步** |
 | [backend-api.md](./backend-api.md) | 后端 API、数据模型、SSE、决策、导出、RAG-1 MVP | **P0 — 已完成** |
 | [rag-design.md](./rag-design.md) | RAG-1 **规则切片** + RAG-2 论文上下文；任务 ID、验收 | **P1 — 待实施** |

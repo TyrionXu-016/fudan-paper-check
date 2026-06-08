@@ -67,6 +67,10 @@ curl -H "Host: api-mse.tyrion.space" http://127.0.0.1/health
 - `fudan-pager-mse-worker-1` - arq 异步任务
 - `fudan-pager-mse-redis-1` - Redis 队列
 
+## 公网验收记录
+
+最近一次公网验收见 [`docs/plans/public-acceptance-2026-06-08.md`](../docs/plans/public-acceptance-2026-06-08.md)。该次验收发现前端与基础 API 可达，但 PDF 上传后生产解析链路进入 `parse_failed`，并导致 API `/health` 多次超时；修复 worker/Redis/inline fallback 后需按该文档复测。
+
 ## 环境变量
 
 `deploy/.env.prod` 只保存在服务器，勿提交 Git。完整模板见 [`deploy/.env.prod.example`](.env.prod.example)。
