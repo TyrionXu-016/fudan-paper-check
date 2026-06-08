@@ -2,10 +2,6 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends docker.io \
-    && rm -rf /var/lib/apt/lists/*
-
 COPY pyproject.toml .
 COPY packages packages
 COPY apps apps
@@ -14,7 +10,7 @@ COPY config config
 RUN pip install --no-cache-dir --default-timeout=120 \
     -i https://pypi.tuna.tsinghua.edu.cn/simple \
     pydantic pyyaml httpx fastapi "uvicorn[standard]" python-multipart arq redis \
-    eval_type_backport pyjwt python-docx reportlab
+    eval_type_backport pyjwt python-docx reportlab docker
 
 ENV PYTHONPATH=/app/packages:/app/apps
 
