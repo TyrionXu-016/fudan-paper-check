@@ -10,6 +10,7 @@ LOCK_FILE="${LOCK_FILE:-/var/lock/fudan-pager-check-mse-deploy.lock}"
 API_HEALTH_URL="${API_HEALTH_URL:-http://127.0.0.1:18083/health}"
 export DOCKER_BUILDKIT="${DOCKER_BUILDKIT:-0}"
 export COMPOSE_DOCKER_CLI_BUILD="${COMPOSE_DOCKER_CLI_BUILD:-0}"
+SKIP_CONVERTER_BUILD="${SKIP_CONVERTER_BUILD:-0}"
 
 log() {
   printf '[%s] %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$*"
@@ -177,9 +178,13 @@ main() {
 
   ensure_env_file
 
-  log "build converter images"
-  docker build -f docker/maker/Dockerfile -t "$(grep -m1 '^MAKER_IMAGE=' "$ENV_FILE" | cut -d= -f2-)" .
-  docker build -f docker/mineru/Dockerfile -t "$(grep -m1 '^MINERU_IMAGE=' "$ENV_FILE" | cut -d= -f2-)" .
+  if [[ "$SKIP_CONVERTER_BUILD" == "1" ]]; then
+    log "skip converter image build"
+  else
+    log "build converter images"
+    docker build -f docker/maker/Dockerfile -t "$(grep -m1 '^MAKER_IMAGE=' "$ENV_FILE" | cut -d= -f2-)" .
+    docker build -f docker/mineru/Dockerfile -t "$(grep -m1 '^MINERU_IMAGE=' "$ENV_FILE" | cut -d= -f2-)" .
+  fi
 
   log "build and restart backend containers"
   docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" up -d --build --remove-orphans
