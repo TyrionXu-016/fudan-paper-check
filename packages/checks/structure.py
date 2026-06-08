@@ -55,7 +55,7 @@ class StructureChecker(BaseChecker):
                 )
             )
 
-        if not doc.references:
+        if not (doc.references or section_text(doc, "references").strip()):
             issues.append(
                 Issue(
                     code="STRUCT_EMPTY_REFERENCES",

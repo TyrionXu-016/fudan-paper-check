@@ -123,3 +123,32 @@ Bibliography
     assert doc.meta.abstract.startswith("This thesis studies")
     assert doc.meta.keywords == ["font transfer", "neural network"]
     assert doc.references
+
+
+def test_reference_section_text_is_not_reported_as_empty():
+    doc = PaperDocument(
+        sections=[
+            Section(
+                id="sec_refs",
+                kind=SectionKind.REFERENCES,
+                title="Bibliography",
+                start_line=1,
+                end_line=2,
+            )
+        ],
+        blocks=[
+            Block(
+                id="blk_ref",
+                type=BlockType.PARAGRAPH,
+                section_id="sec_refs",
+                line_start=2,
+                line_end=2,
+                text="Doe J. Neural font transfer. Journal, 2017.",
+                raw="Doe J. Neural font transfer. Journal, 2017.",
+            )
+        ],
+    )
+
+    issues = StructureChecker("generic").check(doc)
+
+    assert "STRUCT_EMPTY_REFERENCES" not in _codes(issues)
