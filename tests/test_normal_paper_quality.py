@@ -2,6 +2,7 @@ from pathlib import Path
 
 from checks.consistency import ConsistencyChecker
 from checks.format import FormatChecker
+from checks.reference import ReferenceChecker
 from checks.structure import StructureChecker
 from parser.fusion import DualSourceFusionParser
 from schema.models import (
@@ -177,6 +178,41 @@ Smith A. Deep learning for glyphs. Conference, 2018.
 
     assert [ref.index for ref in doc.references] == [1, 2]
     assert doc.references[0].raw_text.startswith("Doe J.")
+
+
+def test_plain_reference_parser_ignores_descriptive_prose_lines():
+    content = """
+Title
+
+Bibliography
+This thesis was made available by the institutional repository in 2017.
+Doe J. Neural font transfer. Journal, 2017.
+""".strip()
+
+    doc = DualSourceFusionParser().parse(content)
+
+    assert [ref.raw_text for ref in doc.references] == [
+        "Doe J. Neural font transfer. Journal, 2017."
+    ]
+
+
+def test_numbered_references_merge_wrapped_continuation_lines():
+    content = """
+Title
+
+References
+[1] Hirotugu Akaike. A new look at the statistical model identification. In: IEEE Transac-
+tions on Automatic Control, 1974.
+[2] Christopher Michael Bishop. Pattern Recognition and Machine Learning. Springer-Verlag,
+New York, 2006.
+""".strip()
+
+    doc = DualSourceFusionParser().parse(content)
+
+    assert len(doc.references) == 2
+    assert "1974" in doc.references[0].raw_text
+    assert "New York, 2006" in doc.references[1].raw_text
+    assert "REF_INCOMPLETE_ENTRY" not in _codes(ReferenceChecker().check(doc))
 
 
 def test_ocr_number_space_warning_is_aggregated_and_ignores_doi():

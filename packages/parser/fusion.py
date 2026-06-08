@@ -286,6 +286,8 @@ def _parse_references(lines: list[str]) -> list[Reference]:
         elif _looks_like_reference_entry(stripped):
             refs.append(Reference(index=next_index, raw_text=stripped))
             next_index += 1
+        elif refs and stripped:
+            refs[-1].raw_text = f"{refs[-1].raw_text} {stripped}".strip()
     return refs
 
 
