@@ -260,12 +260,12 @@ npm run lint && npm run build
 - shell 语法与 `git diff --check` 通过。
 - pytest `16 passed`。
 - 前端 lint 与 Next production build 通过。
-- 本地镜像 `fudan-pager-mse-app:bd0f85379088` 已构建成功，架构为 `amd64 linux`。
-- 镜像压缩包已生成：`/tmp/fudan-pager-mse-app_bd0f85379088.tar.gz`，大小约 205 MB。
+- 本地镜像 `fudan-pager-mse-app:d850c8d80be3` 已构建成功，架构为 `amd64 linux`。
+- 镜像压缩包已生成：`/tmp/fudan-pager-mse-app_d850c8d80be3.tar.gz`，大小约 211 MB。
 
 生产发布状态：
 
-- `mse-tyrion` 已推送至 `bd0f853`。
+- 应用镜像对应的代码提交为 `d850c8d`；本小节后续文档提交不影响应用镜像内容。
 - 截至 2026-06-09 21:48，`ssh mse` 仍在 banner 阶段超时，`GET https://api-mse.tyrion.space/health` 仍 15 秒超时。
 - 因生产入口不可控，尚未能执行 `scp`、远端 `docker load`、无构建部署和公网业务复测。
 
