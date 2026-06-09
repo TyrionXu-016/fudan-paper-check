@@ -10,7 +10,8 @@ LOCK_FILE="${LOCK_FILE:-/var/lock/fudan-pager-check-mse-deploy.lock}"
 API_HEALTH_URL="${API_HEALTH_URL:-http://127.0.0.1:18083/health}"
 export DOCKER_BUILDKIT="${DOCKER_BUILDKIT:-0}"
 export COMPOSE_DOCKER_CLI_BUILD="${COMPOSE_DOCKER_CLI_BUILD:-0}"
-SKIP_CONVERTER_BUILD="${SKIP_CONVERTER_BUILD:-0}"
+DEPLOY_MIN_FREE_MB="${DEPLOY_MIN_FREE_MB:-512}"
+DEPLOY_MIN_AVAILABLE_MEM_MB="${DEPLOY_MIN_AVAILABLE_MEM_MB:-64}"
 
 log() {
   printf '[%s] %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$*"
@@ -62,6 +63,11 @@ set_env_default() {
   fi
 }
 
+get_env_value() {
+  local key="$1"
+  grep -m1 "^${key}=" "$ENV_FILE" 2>/dev/null | cut -d= -f2- || true
+}
+
 append_cors_origin() {
   local origin="$1"
   local current
@@ -98,6 +104,7 @@ LLM_PROVIDER=deepseek
 LLM_BASE_URL=https://api.deepseek.com/v1
 LLM_MODEL=deepseek-chat
 LLM_MODEL_REASONING=deepseek-reasoner
+APP_IMAGE=
 EOF
   else
     chmod 600 "$ENV_FILE"
@@ -121,6 +128,7 @@ EOF
   set_env_default "LLM_BASE_URL" "https://api.deepseek.com/v1"
   set_env_default "LLM_MODEL" "deepseek-chat"
   set_env_default "LLM_MODEL_REASONING" "deepseek-reasoner"
+  set_env_default "APP_IMAGE" ""
   set_env_default "MSE_REVISION_DUE_DAYS" "7"
   set_env_default "MSE_REVISION_REMINDER_WINDOW_HOURS" "24"
   set_env_default "MSE_REVISION_REMINDER_DRY_RUN" "0"
@@ -128,6 +136,50 @@ EOF
   append_cors_origin "http://api-mse.tyrion.space"
   append_cors_origin "https://mse.paper.tyrion.space"
   chmod 600 "$ENV_FILE"
+}
+
+require_image() {
+  local label="$1"
+  local image="$2"
+  if [[ -z "$image" ]]; then
+    echo "missing required image for ${label}; set ${label} in ${ENV_FILE}" >&2
+    exit 1
+  fi
+  if ! docker image inspect "$image" >/dev/null 2>&1; then
+    echo "required image for ${label} is not loaded locally: ${image}" >&2
+    exit 1
+  fi
+}
+
+check_capacity() {
+  local free_mb available_mem_mb
+  free_mb="$(df -Pm "$DEPLOY_DIR" | awk 'NR==2 { print $4 }')"
+  if [[ "$free_mb" =~ ^[0-9]+$ && "$free_mb" -lt "$DEPLOY_MIN_FREE_MB" ]]; then
+    echo "insufficient disk space: ${free_mb}MB free, require ${DEPLOY_MIN_FREE_MB}MB" >&2
+    exit 1
+  fi
+
+  available_mem_mb="$(awk '/MemAvailable/ { printf "%d", $2 / 1024 }' /proc/meminfo 2>/dev/null || echo 0)"
+  if [[ "$available_mem_mb" =~ ^[0-9]+$ && "$available_mem_mb" -lt "$DEPLOY_MIN_AVAILABLE_MEM_MB" ]]; then
+    echo "insufficient available memory: ${available_mem_mb}MB, require ${DEPLOY_MIN_AVAILABLE_MEM_MB}MB" >&2
+    exit 1
+  fi
+}
+
+preflight() {
+  local app_image maker_image mineru_image
+  app_image="$(get_env_value APP_IMAGE)"
+  maker_image="$(get_env_value MAKER_IMAGE)"
+  mineru_image="$(get_env_value MINERU_IMAGE)"
+
+  log "preflight"
+  docker info >/dev/null
+  check_capacity
+  require_image "APP_IMAGE" "$app_image"
+  require_image "MAKER_IMAGE" "$maker_image"
+  require_image "MINERU_IMAGE" "$mineru_image"
+  docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" ps >/dev/null || true
+  log "using app image ${app_image}"
 }
 
 wait_for_health() {
@@ -140,6 +192,24 @@ wait_for_health() {
     sleep 2
   done
   curl -fsS "$API_HEALTH_URL" >/dev/null
+}
+
+rollback_app_image() {
+  local previous_image="$1"
+  local current_image
+  current_image="$(get_env_value APP_IMAGE)"
+  if [[ -z "$previous_image" || "$previous_image" == "$current_image" ]]; then
+    return 1
+  fi
+  if ! docker image inspect "$previous_image" >/dev/null 2>&1; then
+    log "rollback skipped; previous image is not loaded: ${previous_image}"
+    return 1
+  fi
+
+  log "rollback to previous app image ${previous_image}"
+  set_env_value "APP_IMAGE" "$previous_image"
+  docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" up -d --no-build --remove-orphans
+  wait_for_health
 }
 
 main() {
@@ -156,6 +226,8 @@ main() {
   fi
 
   cd "$DEPLOY_DIR"
+  local previous_app_image
+  previous_app_image="$(get_env_value APP_IMAGE)"
   if ! git diff --quiet || ! git diff --cached --quiet; then
     echo "tracked worktree has local changes; refusing deploy" >&2
     exit 1
@@ -177,21 +249,20 @@ main() {
   git pull --ff-only "$DEPLOY_REMOTE" "$DEPLOY_BRANCH"
 
   ensure_env_file
+  preflight
 
-  if [[ "$SKIP_CONVERTER_BUILD" == "1" ]]; then
-    log "skip converter image build"
-  else
-    log "build converter images"
-    docker build -f docker/maker/Dockerfile -t "$(grep -m1 '^MAKER_IMAGE=' "$ENV_FILE" | cut -d= -f2-)" .
-    docker build -f docker/mineru/Dockerfile -t "$(grep -m1 '^MINERU_IMAGE=' "$ENV_FILE" | cut -d= -f2-)" .
-  fi
-
-  log "build and restart backend containers"
-  docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" up -d --build --remove-orphans
+  log "restart backend containers without build"
+  docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" up -d --no-build --remove-orphans
   docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" ps
 
   log "health check"
-  wait_for_health
+  if ! wait_for_health; then
+    log "health check failed"
+    if rollback_app_image "$previous_app_image"; then
+      log "rollback finished"
+    fi
+    exit 1
+  fi
   log "deploy finished"
 }
 

@@ -1,6 +1,6 @@
 # 生产环境：仅后端 API + Redis + Worker
 # 用法：在仓库根目录执行
-#   docker compose -f deploy/docker-compose.prod.yml --env-file deploy/.env.prod up -d --build
+#   docker compose -f deploy/docker-compose.prod.yml --env-file deploy/.env.prod up -d --no-build
 
 name: fudan-pager-mse
 
@@ -12,9 +12,7 @@ services:
       - pager_internal
 
   api:
-    build:
-      context: ..
-      dockerfile: Dockerfile
+    image: ${APP_IMAGE}
     command: uvicorn api.main:app --host 0.0.0.0 --port 8000 --app-dir apps
     restart: unless-stopped
     ports:
@@ -75,9 +73,7 @@ services:
       - pager_internal
 
   worker:
-    build:
-      context: ..
-      dockerfile: Dockerfile
+    image: ${APP_IMAGE}
     command: arq worker.tasks.WorkerSettings
     working_dir: /app/apps
     restart: unless-stopped

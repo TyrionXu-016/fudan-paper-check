@@ -4,6 +4,7 @@ set -euo pipefail
 DEPLOY_DIR="${DEPLOY_DIR:-/opt/fudan-pager-check-mse}"
 DEPLOY_BRANCH="${DEPLOY_BRANCH:-mse-tyrion}"
 DEPLOY_REMOTE="${DEPLOY_REMOTE:-origin}"
+ENABLE_AUTO_DEPLOY="${ENABLE_AUTO_DEPLOY:-0}"
 SERVICE_NAME="${SERVICE_NAME:-fudan-pager-check-mse-autodeploy}"
 SERVICE_FILE="/etc/systemd/system/${SERVICE_NAME}.service"
 TIMER_FILE="/etc/systemd/system/${SERVICE_NAME}.timer"
@@ -44,5 +45,10 @@ WantedBy=timers.target
 EOF
 
 systemctl daemon-reload
-systemctl enable --now "${SERVICE_NAME}.timer"
+if [[ "$ENABLE_AUTO_DEPLOY" == "1" ]]; then
+  systemctl enable --now "${SERVICE_NAME}.timer"
+else
+  systemctl disable --now "${SERVICE_NAME}.timer" >/dev/null 2>&1 || true
+  echo "auto deploy timer installed but disabled; set ENABLE_AUTO_DEPLOY=1 to enable"
+fi
 systemctl list-timers --all "${SERVICE_NAME}.timer" --no-pager

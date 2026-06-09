@@ -1,10 +1,38 @@
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+const API_TIMEOUT_MS = Number(process.env.NEXT_PUBLIC_API_TIMEOUT_MS ?? "15000");
+const SERVICE_UNAVAILABLE_MESSAGE = "后端服务暂不可用，请稍后重试。";
 
 export class ApiError extends Error {
   status: number;
   constructor(status: number, message: string) {
     super(message);
     this.status = status;
+  }
+}
+
+function apiErrorFromFetchError(err: unknown): ApiError {
+  if (err instanceof ApiError) return err;
+  if (err instanceof DOMException && err.name === "AbortError") {
+    return new ApiError(0, SERVICE_UNAVAILABLE_MESSAGE);
+  }
+  if (err instanceof TypeError) {
+    return new ApiError(0, SERVICE_UNAVAILABLE_MESSAGE);
+  }
+  return new ApiError(0, SERVICE_UNAVAILABLE_MESSAGE);
+}
+
+async function fetchWithTimeout(input: string, init: RequestInit = {}): Promise<Response> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), API_TIMEOUT_MS);
+  const onAbort = () => controller.abort();
+  init.signal?.addEventListener("abort", onAbort, { once: true });
+  try {
+    return await fetch(input, { ...init, signal: controller.signal });
+  } catch (err) {
+    throw apiErrorFromFetchError(err);
+  } finally {
+    clearTimeout(timeout);
+    init.signal?.removeEventListener("abort", onAbort);
   }
 }
 
@@ -19,7 +47,7 @@ async function request<T>(
     headers.set("Content-Type", "application/json");
   }
 
-  const res = await fetch(`${API_BASE}${path}`, { ...options, headers });
+  const res = await fetchWithTimeout(`${API_BASE}${path}`, { ...options, headers });
   if (!res.ok) {
     const text = await res.text();
     throw new ApiError(res.status, text || res.statusText);
@@ -199,7 +227,7 @@ export const api = {
     roundNumber: number,
     format: "md" | "pdf",
   ) => {
-    const res = await fetch(
+    const res = await fetchWithTimeout(
       `${API_BASE}/v1/mse/projects/${projectId}/rounds/${roundNumber}/export.${format}`,
       { headers: { Authorization: `Bearer ${token}` } },
     );
