@@ -32,7 +32,9 @@ def test_auto_deploy_timer_is_disabled_by_default() -> None:
 def test_prebuilt_release_loads_image_before_deploy() -> None:
     script = (ROOT / "deploy/release-prebuilt-app.sh").read_text()
 
-    assert "docker buildx build --platform" in script
+    assert "docker buildx build" in script
+    assert "--platform \"$DOCKER_PLATFORM\"" in script
+    assert "--build-arg \"PYTHON_IMAGE=${PYTHON_IMAGE}\"" in script
     assert "docker save" in script
     assert "docker load -i" in script
     assert 'set_env_value "APP_IMAGE"' in script

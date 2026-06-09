@@ -10,6 +10,7 @@ APP_IMAGE_PREFIX="${APP_IMAGE_PREFIX:-fudan-pager-mse-app}"
 GIT_SHA="${GIT_SHA:-$(git -C "$ROOT" rev-parse --short=12 HEAD)}"
 APP_IMAGE="${APP_IMAGE:-${APP_IMAGE_PREFIX}:${GIT_SHA}}"
 DOCKER_PLATFORM="${DOCKER_PLATFORM:-linux/amd64}"
+PYTHON_IMAGE="${PYTHON_IMAGE:-python:3.12-slim}"
 ARCHIVE_DIR="${APP_IMAGE_ARCHIVE_DIR:-/tmp}"
 ARCHIVE_NAME="$(printf '%s' "$APP_IMAGE" | tr '/:' '__').tar.gz"
 ARCHIVE_PATH="${ARCHIVE_DIR}/${ARCHIVE_NAME}"
@@ -49,7 +50,12 @@ if ! docker buildx version >/dev/null 2>&1; then
 fi
 
 log "build ${APP_IMAGE} for ${DOCKER_PLATFORM}"
-docker buildx build --platform "$DOCKER_PLATFORM" --load -t "$APP_IMAGE" "$ROOT"
+docker buildx build \
+  --platform "$DOCKER_PLATFORM" \
+  --build-arg "PYTHON_IMAGE=${PYTHON_IMAGE}" \
+  --load \
+  -t "$APP_IMAGE" \
+  "$ROOT"
 
 log "save ${APP_IMAGE} to ${ARCHIVE_PATH}"
 docker save "$APP_IMAGE" | gzip -c >"$ARCHIVE_PATH"

@@ -32,6 +32,13 @@ Nginx 可先按 Host 头代理。DNS 生效前在 `tyrion.space` 控制台添加
 DEPLOY_BRANCH=mse-tyrion ./deploy/release-prebuilt-app.sh
 ```
 
+如果 Docker Hub 访问不稳定，可临时指定兼容镜像源：
+
+```bash
+PYTHON_IMAGE=public.ecr.aws/docker/library/python:3.12-slim \
+  DEPLOY_BRANCH=mse-tyrion ./deploy/release-prebuilt-app.sh
+```
+
 该脚本会：
 
 1. 构建 `fudan-pager-mse-app:<git_sha>`。
