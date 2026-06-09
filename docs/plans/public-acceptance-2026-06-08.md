@@ -222,6 +222,53 @@ SKIP_CONVERTER_BUILD=1 DOCKER_BUILDKIT=0 COMPOSE_DOCKER_CLI_BUILD=0 \
 - 后端运行机需要扩容或迁移；当前容量无法同时承载 API、worker、Redis、Docker 转换和构建任务。
 - 自动部署 timer 已在部署尝试前停止；恢复前应先改成“不在生产机 build”的发布方式。
 
+## 预构建发布修复记录（2026-06-09）
+
+执行时间：2026-06-09 21:24-21:48 CST。
+
+已完成：
+
+- `e2150f6 fix: deploy mse backend from prebuilt image`
+  - 生产 compose 的 `api` / `worker` 改为 `image: ${APP_IMAGE}`，移除 `build:`。
+  - `deploy/git-pull-deploy.sh` 改为 `docker compose up -d --no-build`。
+  - 部署前校验 `APP_IMAGE`、`MAKER_IMAGE`、`MINERU_IMAGE` 已加载；缺失直接失败。
+  - 增加磁盘/内存 preflight 与健康检查失败后回滚上一版 `APP_IMAGE`。
+  - 新增 `deploy/release-prebuilt-app.sh`：本地/构建机 build `linux/amd64` 应用镜像、`docker save | gzip`、`scp`、远端 `docker load`、写入 `APP_IMAGE`、无构建部署。
+  - 新增 `deploy/build-converter-images.sh`：转换镜像独立构建，常规部署不再构建 maker/mineru。
+  - 自动部署 timer 默认安装后保持禁用，需 `ENABLE_AUTO_DEPLOY=1` 显式启用。
+- `bd0f853 fix: allow mirrored python base for prebuilt image`
+  - 应用 Dockerfile 支持 `PYTHON_IMAGE` build arg，Docker Hub 不稳定时可使用兼容镜像源。
+  - 本次使用 `public.ecr.aws/docker/library/python:3.12-slim` 成功构建本地 `linux/amd64` 应用镜像。
+
+本地验证：
+
+```text
+bash -n deploy/git-pull-deploy.sh deploy/deploy.sh deploy/install-auto-deploy.sh \
+  deploy/release-prebuilt-app.sh deploy/build-converter-images.sh && git diff --check
+
+PYTHONPATH=packages:apps python3 -m pytest \
+  tests/test_deploy_prebuilt_release.py \
+  tests/test_mse_converter_strict.py \
+  tests/test_mse_core_loop.py \
+  tests/test_mse_quasi_prod_script.py -q
+
+npm run lint && npm run build
+```
+
+结果：
+
+- shell 语法与 `git diff --check` 通过。
+- pytest `16 passed`。
+- 前端 lint 与 Next production build 通过。
+- 本地镜像 `fudan-pager-mse-app:bd0f85379088` 已构建成功，架构为 `amd64 linux`。
+- 镜像压缩包已生成：`/tmp/fudan-pager-mse-app_bd0f85379088.tar.gz`，大小约 205 MB。
+
+生产发布状态：
+
+- `mse-tyrion` 已推送至 `bd0f853`。
+- 截至 2026-06-09 21:48，`ssh mse` 仍在 banner 阶段超时，`GET https://api-mse.tyrion.space/health` 仍 15 秒超时。
+- 因生产入口不可控，尚未能执行 `scp`、远端 `docker load`、无构建部署和公网业务复测。
+
 ## 后续复测建议
 
 修复 worker/Redis/inline fallback 问题后，按以下顺序复测：
