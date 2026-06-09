@@ -163,6 +163,65 @@ PYTHONPATH=packages:apps python3 -m pytest \
 - 已终止本地部署 SSH 会话；远端 `git rev-parse --short HEAD` 一度确认到 `04322bf`，且未发现残留 `docker build` 进程。
 - 截至 2026-06-08 22:30，SSH 仍在 banner 阶段超时，`https://api-mse.tyrion.space/health` 仍超时；尚未能执行 `SKIP_CONVERTER_BUILD=1` 的轻量部署，因此公网复测未完成。
 
+## 生产体验复测（2026-06-09）
+
+执行时间：2026-06-09 21:13-21:22 CST。
+
+目标：继续以真实用户视角体验公网平台，并确认是否达到生产预期。
+
+### 初始状态
+
+- `GET https://api-mse.tyrion.space/health` 返回 `HTTP 200`，`time_total=2.404017`。
+- `ssh mse` 恢复可用，远端负载约 `load average: 5.97, 3.76, 3.17`。
+- 远端 `/opt/fudan-pager-check-mse` 仍停留在 `04322bf`，未包含 `78b06ab` / `6c82948` 的部署脚本与验收文档更新。
+
+### 尝试部署最新修复
+
+执行：
+
+```bash
+cd /opt/fudan-pager-check-mse
+git fetch --prune origin +refs/heads/mse-tyrion:refs/remotes/origin/mse-tyrion
+git checkout -B mse-tyrion origin/mse-tyrion
+SKIP_CONVERTER_BUILD=1 DOCKER_BUILDKIT=0 COMPOSE_DOCKER_CLI_BUILD=0 \
+  DEPLOY_BRANCH=mse-tyrion ./deploy/git-pull-deploy.sh
+```
+
+结果：
+
+- 远端代码切到 `6c82948`。
+- 部署脚本确认输出 `skip converter image build`，未重建 maker/mineru 转换镜像。
+- 随后进入 API/worker 应用镜像 build 的 `pip install` 阶段，公网 `/health` 开始超时，SSH 再次出现 `Connection timed out during banner exchange`。
+- 为避免继续压垮后端，已终止本地 SSH 部署会话。
+- 等待约 1 分钟后，`GET https://api-mse.tyrion.space/health` 仍 `HTTP=000`、20 秒超时；`ssh mse` 仍在 banner 阶段超时。
+
+### 前端体验
+
+前端由 Vercel 承载，静态路由可访问：
+
+| 路由 | 结果 |
+|------|------|
+| `/` | `HTTP 307`，约 0.84s，跳转 dashboard |
+| `/login` | `HTTP 200`，约 0.61s |
+| `/register` | `HTTP 200`，约 0.79s |
+| `/dashboard` | `HTTP 200`，约 0.68s |
+| `/mse/dashboard` | `HTTP 200`，约 0.83s |
+| `/mse/projects/new` | `HTTP 200`，约 0.81s |
+| `/mse/invite/test-token` | `HTTP 200`，约 2.06s |
+
+### 体验结论
+
+本次生产体验仍未通过。
+
+前端页面可打开，但后端 API 在应用镜像构建压力下持续超时，SSH 也会失去可用性。用户实际体验会表现为登录、注册、项目创建、邀请接受、PDF 上传和报告查询均无法稳定完成。因此当前平台没有达到生产预期。
+
+当前最高优先级不是继续补业务功能，而是修生产运行方式：
+
+- 不应在 1.7 GiB 内存的生产机器上现场 `docker compose up --build`。
+- API/worker 镜像应在 CI 或更大构建机预构建后推送，生产机器只执行 `docker compose pull && docker compose up -d`。
+- 后端运行机需要扩容或迁移；当前容量无法同时承载 API、worker、Redis、Docker 转换和构建任务。
+- 自动部署 timer 已在部署尝试前停止；恢复前应先改成“不在生产机 build”的发布方式。
+
 ## 后续复测建议
 
 修复 worker/Redis/inline fallback 问题后，按以下顺序复测：
