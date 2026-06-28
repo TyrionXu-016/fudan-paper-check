@@ -867,7 +867,7 @@ packages/notify/
 - [x] M1-3c：`FigureTableChecker` + 增强 `FigureRef`/`_parse_figures`（MinerU 图块+题注+页码）
 - [x] M1-3b：`SectionChunker` + `IssueMerger` — 章节块迭代与 Issue 去重
 - [x] M1-4：Prompt 精密设计落地 — 见 [mse-prompt-design.md §11](./mse-prompt-design.md)（P-1～P-6 + MseReviewAgent E2E）
-- [ ] M1-5：集成测试：知网下载的 **CS 硕士论文** + 学院规范 → 带页码 Issue 列表（本地准生产已使用公开硕士论文 PDF；仍需你提供 CNKI/机构下载样本）
+- [x] M1-5：集成测试：**CS 硕士论文** + 学院规范 → 带页码 Issue 列表。已用公开 CS 硕士论文 PDF（`samples/mse/theses/tier-a-primary.pdf`）跑通 `scripts/mse_acceptance_private_samples.py`（docker MinerU 严格 + DeepSeek）：14 条 Issue，全部带 page，8 条带 revision_hint，PDF 批注导出校验通过。CNKI/机构样本可选，用于扩充学科/格式覆盖。
 
 ### Phase M2 — 邮件与闭环（1 周）
 
