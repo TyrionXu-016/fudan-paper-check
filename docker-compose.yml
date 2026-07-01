@@ -1,9 +1,4 @@
 services:
-  redis:
-    image: redis:7-alpine
-    ports:
-      - "6379:6379"
-
   api:
     build: .
     command: uvicorn api.main:app --host 0.0.0.0 --port 8000 --app-dir apps
@@ -13,19 +8,18 @@ services:
     working_dir: /app
     environment:
       PYTHONPATH: /app/packages:/app/apps
-      REDIS_URL: redis://redis:6379
+      REDIS_URL: ${REDIS_URL:?Set REDIS_URL to the managed Redis connection string}
       CORS_ORIGINS: http://localhost:3000,http://127.0.0.1:3000
       JWT_SECRET: dev-compose-secret
-      MSE_DATABASE_URL: sqlite:////app/data/mse.db
+      MSE_DATABASE_URL: ${MSE_DATABASE_URL:?Set MSE_DATABASE_URL to the Supabase Postgres connection string}
+      MSE_DB_SCHEMA: ${MSE_DB_SCHEMA:-fudan_pager}
+      MSE_ENABLE_RLS: ${MSE_ENABLE_RLS:-1}
       PDF_CONVERTER_MODE: ${PDF_CONVERTER_MODE:-mock}
       MSE_ALLOW_MOCK_FALLBACK: ${MSE_ALLOW_MOCK_FALLBACK:-1}
       MINERU_IMAGE: ${MINERU_IMAGE:-mineru:latest}
       MAKER_IMAGE: ${MAKER_IMAGE:-maker-pdf:latest}
     ports:
       - "8000:8000"
-    depends_on:
-      - redis
-
   worker:
     build: .
     command: arq worker.tasks.WorkerSettings
@@ -36,15 +30,14 @@ services:
     working_dir: /app/apps
     environment:
       PYTHONPATH: /app/packages:/app/apps
-      REDIS_URL: redis://redis:6379
-      MSE_DATABASE_URL: sqlite:////app/data/mse.db
+      REDIS_URL: ${REDIS_URL:?Set REDIS_URL to the managed Redis connection string}
+      MSE_DATABASE_URL: ${MSE_DATABASE_URL:?Set MSE_DATABASE_URL to the Supabase Postgres connection string}
+      MSE_DB_SCHEMA: ${MSE_DB_SCHEMA:-fudan_pager}
+      MSE_ENABLE_RLS: ${MSE_ENABLE_RLS:-1}
       PDF_CONVERTER_MODE: ${PDF_CONVERTER_MODE:-mock}
       MSE_ALLOW_MOCK_FALLBACK: ${MSE_ALLOW_MOCK_FALLBACK:-1}
       MINERU_IMAGE: ${MINERU_IMAGE:-mineru:latest}
       MAKER_IMAGE: ${MAKER_IMAGE:-maker-pdf:latest}
-    depends_on:
-      - redis
-
   web:
     image: node:20-alpine
     working_dir: /app/apps/web-next

@@ -1,16 +1,10 @@
-# 生产环境：仅后端 API + Redis + Worker
+# 生产环境：后端 API + Worker；Redis 使用外部托管服务
 # 用法：在仓库根目录执行
 #   docker compose -f deploy/docker-compose.prod.yml --env-file deploy/.env.prod up -d --no-build
 
 name: fudan-pager-mse
 
 services:
-  redis:
-    image: redis:7-alpine
-    restart: unless-stopped
-    networks:
-      - pager_internal
-
   api:
     image: ${APP_IMAGE}
     command: uvicorn api.main:app --host 0.0.0.0 --port 8000 --app-dir apps
@@ -19,10 +13,12 @@ services:
       - "127.0.0.1:18083:8000"
     environment:
       PYTHONPATH: /app/packages:/app/apps
-      REDIS_URL: redis://redis:6379
+      REDIS_URL: ${REDIS_URL:?Set REDIS_URL to the managed Redis connection string}
       JWT_SECRET: ${JWT_SECRET}
       CORS_ORIGINS: ${CORS_ORIGINS:-*}
-      MSE_DATABASE_URL: ${MSE_DATABASE_URL:-sqlite:////app/data/mse.db}
+      MSE_DATABASE_URL: ${MSE_DATABASE_URL:?Set MSE_DATABASE_URL to the Supabase Postgres connection string}
+      MSE_DB_SCHEMA: ${MSE_DB_SCHEMA:-fudan_pager}
+      MSE_ENABLE_RLS: ${MSE_ENABLE_RLS:-1}
       APP_BASE_URL: ${APP_BASE_URL:-http://localhost:3000}
       PDF_CONVERTER_MODE: ${PDF_CONVERTER_MODE:-docker}
       MSE_ALLOW_MOCK_FALLBACK: ${MSE_ALLOW_MOCK_FALLBACK:-0}
@@ -67,8 +63,6 @@ services:
       MSE_REVISION_REMINDER_DRY_RUN: ${MSE_REVISION_REMINDER_DRY_RUN:-0}
     volumes:
       - pager_data:/app/data
-    depends_on:
-      - redis
     networks:
       - pager_internal
 
@@ -79,8 +73,10 @@ services:
     restart: unless-stopped
     environment:
       PYTHONPATH: /app/packages:/app/apps
-      REDIS_URL: redis://redis:6379
-      MSE_DATABASE_URL: ${MSE_DATABASE_URL:-sqlite:////app/data/mse.db}
+      REDIS_URL: ${REDIS_URL:?Set REDIS_URL to the managed Redis connection string}
+      MSE_DATABASE_URL: ${MSE_DATABASE_URL:?Set MSE_DATABASE_URL to the Supabase Postgres connection string}
+      MSE_DB_SCHEMA: ${MSE_DB_SCHEMA:-fudan_pager}
+      MSE_ENABLE_RLS: ${MSE_ENABLE_RLS:-1}
       APP_BASE_URL: ${APP_BASE_URL:-http://localhost:3000}
       PDF_CONVERTER_MODE: ${PDF_CONVERTER_MODE:-docker}
       MSE_ALLOW_MOCK_FALLBACK: ${MSE_ALLOW_MOCK_FALLBACK:-0}
@@ -128,8 +124,6 @@ services:
       - pager_data:/app/data
       - /var/run/docker.sock:/var/run/docker.sock
       - /usr/bin/docker:/usr/bin/docker:ro
-    depends_on:
-      - redis
     networks:
       - pager_internal
 

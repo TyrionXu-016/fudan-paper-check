@@ -357,7 +357,7 @@ class MseRoundReport(BaseModel):
 
 ```mermaid
 flowchart LR
-  API[FastAPI] --> ORM[SQLAlchemy / sqlite3]
+  API[FastAPI] --> ORM[SQLAlchemy / Supabase Postgres]
   Worker[arq Worker] --> ORM
   ORM --> DB[(data/mse.db)]
   FS[data/uploads/] --> PDF[PDF MinerU MD]
@@ -366,7 +366,7 @@ flowchart LR
 
 - **Redis**：仍仅 arq 任务队列
 - **文件系统**：`data/uploads/{job_id}/` 存 PDF、MinerU 产出；RAG 索引 `data/rag/mse/`
-- **环境变量**：`MSE_DATABASE_URL=sqlite:///data/mse.db`（默认）
+- **环境变量**：`MSE_DATABASE_URL=postgresql://...?...sslmode=require`，生产使用 Supabase Postgres。
 
 #### 表结构（M0 建表）
 
@@ -493,7 +493,7 @@ data/
   uploads/           # 不变
 ```
 
-依赖：`sqlalchemy>=2.0`（或标准库 `sqlite3` + 手写 SQL，推荐 SQLAlchemy 与 Pydantic 互转）。
+依赖：`sqlalchemy>=2.0` + `psycopg[binary]`，通过 SQLAlchemy 与 Pydantic 互转。
 
 #### 写入流程（一轮分析完成）
 
@@ -532,7 +532,8 @@ ORM 层抽象 `DATABASE_URL`，生产改为 `postgresql://...` 即可；Issue/Pr
 **库路径（容器内）**：
 
 ```bash
-MSE_DATABASE_URL=sqlite:////app/data/mse.db   # 注意四个斜杠 = 绝对路径
+MSE_DATABASE_URL=postgresql://postgres.project-ref:password@aws-0-ap-northeast-1.pooler.supabase.com:5432/postgres?sslmode=require
+MSE_DB_SCHEMA=fudan_pager
 ```
 
 **开发** — 扩展根目录 [`docker-compose.yml`](../docker-compose.yml)：
@@ -543,7 +544,8 @@ services:
     volumes:
       - pager_data:/app/data    # SQLite + uploads（替代仅 .:/app 时可并存）
     environment:
-      MSE_DATABASE_URL: sqlite:////app/data/mse.db
+      MSE_DATABASE_URL: ${MSE_DATABASE_URL:?Set MSE_DATABASE_URL to the Supabase Postgres connection string}
+      MSE_DB_SCHEMA: ${MSE_DB_SCHEMA:-fudan_pager}
       PDF_CONVERTER_MODE: docker
       MINERU_IMAGE: ${MINERU_IMAGE:-fudan-pager-mineru}
   worker:
@@ -551,7 +553,8 @@ services:
       - pager_data:/app/data
       - /var/run/docker.sock:/var/run/docker.sock   # MinerU 容器调用
     environment:
-      MSE_DATABASE_URL: sqlite:////app/data/mse.db
+      MSE_DATABASE_URL: ${MSE_DATABASE_URL:?Set MSE_DATABASE_URL to the Supabase Postgres connection string}
+      MSE_DB_SCHEMA: ${MSE_DB_SCHEMA:-fudan_pager}
       PDF_CONVERTER_MODE: docker
 
 volumes:
@@ -562,7 +565,7 @@ volumes:
 
 | 变量 | 值 |
 |------|-----|
-| `MSE_DATABASE_URL` | `sqlite:////app/data/mse.db` |
+| `MSE_DATABASE_URL` | Supabase Postgres 连接串，例如 `postgresql://...?...sslmode=require` |
 | `PDF_CONVERTER_MODE` | `docker` |
 | `MINERU_IMAGE` | 真实 MinerU 镜像名 |
 
@@ -580,7 +583,7 @@ volumes:
 
 ```bash
 # 开发
-docker compose up --build api worker redis
+REDIS_URL=redis://default:password@redis.example.com:6379 docker compose up --build api worker
 
 # 生产
 docker compose -f deploy/docker-compose.prod.yml --env-file deploy/.env.prod up -d --build
@@ -973,7 +976,8 @@ export SMTP_PORT=587
 export SMTP_USER=...
 export SMTP_PASS=...
 export NOTIFY_FROM_EMAIL=mse-tutor@example.com
-export MSE_DATABASE_URL=sqlite:////app/data/mse.db   # Docker 容器内路径
+export MSE_DATABASE_URL=postgresql://postgres.project-ref:password@aws-0-ap-northeast-1.pooler.supabase.com:5432/postgres?sslmode=require
+export MSE_DB_SCHEMA=fudan_pager
 export MSE_GATE_CONFIG=config/mse/gate.yaml
 export PDF_CONVERTER_MODE=docker
 export MINERU_IMAGE=fudan-pager-mineru

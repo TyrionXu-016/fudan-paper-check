@@ -32,12 +32,10 @@ async def _enqueue_or_run(coro_factory, *args) -> None:
         return
     try:
         from arq import create_pool
-        from arq.connections import RedisSettings
 
-        redis_url = os.getenv("REDIS_URL", "redis://localhost:6379")
-        host = redis_url.split("://")[-1].split(":")[0]
-        port = int(redis_url.split(":")[-1] or 6379)
-        redis = await create_pool(RedisSettings(host=host, port=port))
+        from storage.redis_config import build_arq_redis_settings
+
+        redis = await create_pool(build_arq_redis_settings())
         await redis.enqueue_job(coro_factory.__name__, *args)
     except Exception:
         await coro_factory({}, *args)

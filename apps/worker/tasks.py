@@ -140,13 +140,9 @@ async def process_pdf_job(
 
 
 def _build_redis_settings():
-    from arq.connections import RedisSettings
+    from storage.redis_config import build_arq_redis_settings
 
-    redis_url = os.getenv("REDIS_URL", "redis://localhost:6379")
-    host_port = redis_url.split("://")[-1]
-    host = host_port.split(":")[0]
-    port = int(host_port.split(":")[-1] if ":" in host_port else 6379)
-    return RedisSettings(host=host, port=port)
+    return build_arq_redis_settings()
 
 
 from worker.mse_tasks import process_mse_round, retry_mse_round_parse

@@ -1,13 +1,15 @@
 from __future__ import annotations
 
+import os
 from typing import Optional
 
 from sqlalchemy import Boolean, Float, ForeignKey, Integer, String, Text, UniqueConstraint
+from sqlalchemy import MetaData
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
 class Base(DeclarativeBase):
-    pass
+    metadata = MetaData(schema=os.getenv("MSE_DB_SCHEMA") or None)
 
 
 class UserORM(Base):
@@ -27,9 +29,9 @@ class MseProjectORM(Base):
     id: Mapped[str] = mapped_column(String, primary_key=True)
     title: Mapped[str] = mapped_column(String)
     initiator_role: Mapped[str] = mapped_column(String, default="advisor")
-    advisor_id: Mapped[Optional[str]] = mapped_column(String, ForeignKey("users.id"), nullable=True)
+    advisor_id: Mapped[Optional[str]] = mapped_column(String, ForeignKey("users.id"), nullable=True, index=True)
     advisor_email: Mapped[Optional[str]] = mapped_column(String, nullable=True)
-    student_id: Mapped[Optional[str]] = mapped_column(String, ForeignKey("users.id"), nullable=True)
+    student_id: Mapped[Optional[str]] = mapped_column(String, ForeignKey("users.id"), nullable=True, index=True)
     student_email: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     rule_base_ids_json: Mapped[str] = mapped_column(Text, default="[]")
     status: Mapped[str] = mapped_column(String, default="draft")
@@ -119,7 +121,7 @@ class MseInnovationReviewORM(Base):
 
     id: Mapped[str] = mapped_column(String, primary_key=True)
     project_id: Mapped[str] = mapped_column(String, ForeignKey("mse_projects.id"), unique=True, index=True)
-    round_id: Mapped[str] = mapped_column(String, ForeignKey("mse_submission_rounds.id"))
+    round_id: Mapped[str] = mapped_column(String, ForeignKey("mse_submission_rounds.id"), index=True)
     llm_summary: Mapped[str] = mapped_column(Text, default="")
     novelty_score: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
     comparison_notes: Mapped[str] = mapped_column(Text, default="")

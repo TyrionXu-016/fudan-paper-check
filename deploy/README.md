@@ -4,13 +4,13 @@
 
 | 项 | 值 |
 |----|-----|
-| SSH | `ssh mse` |
+| SSH | `ssh ostar-prd` |
 | 服务器路径 | `/opt/fudan-pager-check-mse` |
 | 部署分支 | `mse-tyrion` |
 | API 容器端口 | `127.0.0.1:18083` -> 8000 |
 | 后端域名 | `api-mse.tyrion.space` |
 | 前端域名 | `mse.paper.tyrion.space` |
-| 服务器 IP | `114.55.139.240` |
+| 服务器 IP | `182.92.237.169` |
 
 这是一套独立的第二项目部署，不复用 `/opt/fudan-pager-check`，不占用旧服务的 `18082` 端口，也不修改旧域名的 Nginx 配置。
 
@@ -20,7 +20,7 @@ Nginx 可先按 Host 头代理。DNS 生效前在 `tyrion.space` 控制台添加
 
 | 类型 | 主机记录 | 记录值 |
 |------|----------|--------|
-| A | `api-mse` | `114.55.139.240` |
+| A | `api-mse` | `182.92.237.169` |
 
 生效后访问：`http://api-mse.tyrion.space/health`。
 
@@ -42,7 +42,7 @@ PYTHON_IMAGE=public.ecr.aws/docker/library/python:3.12-slim \
 该脚本会：
 
 1. 构建 `fudan-pager-mse-app:<git_sha>`。
-2. `docker save | gzip` 后通过 `scp` 上传到 `ssh mse`。
+2. `docker save | gzip` 后通过 `scp` 上传到 `ssh ostar-prd`。
 3. 在服务器执行 `docker load`。
 4. 写入 `deploy/.env.prod` 的 `APP_IMAGE`。
 5. 运行 `deploy/git-pull-deploy.sh`，只 `docker compose up -d --no-build`。
@@ -91,7 +91,7 @@ curl -H "Host: api-mse.tyrion.space" http://127.0.0.1/health
 
 - `fudan-pager-mse-api-1` - FastAPI
 - `fudan-pager-mse-worker-1` - arq 异步任务
-- `fudan-pager-mse-redis-1` - Redis 队列
+- Redis 使用外部托管服务，由 `REDIS_URL` 指向，不在本仓库 compose 中启动
 
 ## 公网验收记录
 
@@ -105,7 +105,9 @@ curl -H "Host: api-mse.tyrion.space" http://127.0.0.1/health
 
 - `JWT_SECRET`、`MSE_INVITE_SECRET`
 - `APP_IMAGE=fudan-pager-mse-app:<git_sha>`（由 `release-prebuilt-app.sh` 写入）
-- `MSE_DATABASE_URL=sqlite:////app/data/mse.db`
+- `REDIS_URL=redis://...`（外部托管 Redis 连接串）
+- `MSE_DATABASE_URL=postgresql://postgres.<PROJECT_REF>:...@aws-0-ap-northeast-1.pooler.supabase.com:5432/postgres?sslmode=require`（Supabase Session pooler；`ostar-prd` 当前 IPv4-only，不建议用 direct `db.<PROJECT_REF>.supabase.co:5432`）
+- `MSE_DB_SCHEMA=fudan_pager`（默认使用私有 schema，避免和 Supabase 项目里已有的 `public.users` 等表冲突）
 - `PDF_CONVERTER_MODE=docker`
 - `MSE_ALLOW_MOCK_FALLBACK=0`
 - `MINERU_IMAGE=fudan-pager-mse-mineru`
@@ -121,7 +123,7 @@ curl -H "Host: api-mse.tyrion.space" http://127.0.0.1/health
 
 ## HTTPS
 
-DNS 解析到 `114.55.139.240` 后，在服务器执行：
+DNS 解析到 `182.92.237.169` 后，在服务器执行：
 
 ```bash
 cd /opt/fudan-pager-check-mse

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-SSH_TARGET="${DEPLOY_SSH_TARGET:-mse}"
+SSH_TARGET="${DEPLOY_SSH_TARGET:-ostar-prd}"
 REMOTE_DIR="${DEPLOY_DIR:-/opt/fudan-pager-check-mse}"
 DEPLOY_BRANCH="${DEPLOY_BRANCH:-mse-tyrion}"
 DEPLOY_REMOTE="${DEPLOY_REMOTE:-origin}"

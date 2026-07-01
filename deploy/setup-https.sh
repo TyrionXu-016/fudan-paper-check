@@ -3,7 +3,7 @@
 set -euo pipefail
 
 DOMAIN="api-mse.tyrion.space"
-EXPECTED_IP="114.55.139.240"
+EXPECTED_IP="182.92.237.169"
 REMOTE_DIR="/opt/fudan-pager-check-mse"
 NGINX_CONF="/etc/nginx/conf.d/api-mse.tyrion.space.conf"
 

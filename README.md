@@ -96,6 +96,9 @@ curl -H "Authorization: Bearer $TOKEN" http://localhost:8000/v1/papers/{job_id}/
 ### Docker Compose
 
 ```bash
+export MSE_DATABASE_URL=postgresql://postgres.project-ref:password@aws-0-ap-northeast-1.pooler.supabase.com:5432/postgres?sslmode=require
+export MSE_DB_SCHEMA=fudan_pager
+export REDIS_URL=redis://default:password@redis.example.com:6379
 docker compose up --build
 ```
 
@@ -114,7 +117,10 @@ export PDF_CONVERTER_MODE=docker
 export MSE_ALLOW_MOCK_FALLBACK=0
 export MINERU_IMAGE=fudan-pager-mineru
 export MAKER_IMAGE=fudan-pager-maker
-docker compose up --build api worker redis
+export REDIS_URL=redis://default:password@redis.example.com:6379
+export MSE_DATABASE_URL=postgresql://postgres.project-ref:password@aws-0-ap-northeast-1.pooler.supabase.com:5432/postgres?sslmode=require
+export MSE_DB_SCHEMA=fudan_pager
+docker compose up --build api worker
 ```
 
 Worker 需能访问 Docker（Compose 已挂载 `docker.sock`）。
