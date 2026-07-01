@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+from threading import Lock
 from pathlib import Path
 
 from sqlalchemy import create_engine, text
@@ -12,6 +13,8 @@ DEFAULT_DB = ROOT / "data" / "mse.db"
 _engine = None
 _SessionLocal = None
 _bound_url: str | None = None
+_initialized_key: tuple[str, str | None] | None = None
+_init_lock = Lock()
 
 
 def _database_url() -> str:
@@ -64,29 +67,42 @@ def init_db() -> None:
     from storage.models_orm import Base
 
     url = _database_url()
-    if url.startswith("sqlite:///"):
-        path_str = url.replace("sqlite:///", "", 1)
-        db_path = Path(path_str) if path_str.startswith("/") else ROOT / path_str
-        db_path.parent.mkdir(parents=True, exist_ok=True)
+    schema = _db_schema()
+    init_key = (url, schema)
 
-    _ensure_engine()
-    assert _engine is not None
-    if _is_postgres_url(url) and _db_schema():
-        with _engine.begin() as conn:
-            conn.execute(text(f'CREATE SCHEMA IF NOT EXISTS "{_db_schema()}"'))
-    Base.metadata.create_all(bind=_engine)
-    if _is_postgres_url(url) and os.getenv("MSE_ENABLE_RLS", "1") != "0":
-        with _engine.begin() as conn:
-            for table in Base.metadata.sorted_tables:
-                schema_prefix = f'"{table.schema}".' if table.schema else ""
-                conn.execute(text(f'ALTER TABLE {schema_prefix}"{table.name}" ENABLE ROW LEVEL SECURITY'))
+    global _initialized_key
+    if _initialized_key == init_key:
+        return
+
+    with _init_lock:
+        if _initialized_key == init_key:
+            return
+
+        if url.startswith("sqlite:///"):
+            path_str = url.replace("sqlite:///", "", 1)
+            db_path = Path(path_str) if path_str.startswith("/") else ROOT / path_str
+            db_path.parent.mkdir(parents=True, exist_ok=True)
+
+        _ensure_engine()
+        assert _engine is not None
+        if _is_postgres_url(url) and schema:
+            with _engine.begin() as conn:
+                conn.execute(text(f'CREATE SCHEMA IF NOT EXISTS "{schema}"'))
+        Base.metadata.create_all(bind=_engine)
+        if _is_postgres_url(url) and os.getenv("MSE_ENABLE_RLS", "1") != "0":
+            with _engine.begin() as conn:
+                for table in Base.metadata.sorted_tables:
+                    schema_prefix = f'"{table.schema}".' if table.schema else ""
+                    conn.execute(text(f'ALTER TABLE {schema_prefix}"{table.name}" ENABLE ROW LEVEL SECURITY'))
+        _initialized_key = init_key
 
 
 def reset_engine() -> None:
     """Test helper: force engine rebind on next get_session()."""
-    global _engine, _SessionLocal, _bound_url
+    global _engine, _SessionLocal, _bound_url, _initialized_key
     if _engine is not None:
         _engine.dispose()
     _engine = None
     _SessionLocal = None
     _bound_url = None
+    _initialized_key = None
