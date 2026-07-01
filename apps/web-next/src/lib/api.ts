@@ -36,6 +36,18 @@ async function fetchWithTimeout(input: string, init: RequestInit = {}): Promise<
   }
 }
 
+function parseApiErrorMessage(text: string): string {
+  if (!text) return "";
+  try {
+    const body = JSON.parse(text) as { message?: unknown; detail?: unknown };
+    if (typeof body.message === "string" && body.message.trim()) return body.message;
+    if (typeof body.detail === "string" && body.detail.trim()) return body.detail;
+  } catch {
+    return text;
+  }
+  return text;
+}
+
 async function request<T>(
   path: string,
   options: RequestInit = {},
@@ -50,7 +62,7 @@ async function request<T>(
   const res = await fetchWithTimeout(`${API_BASE}${path}`, { ...options, headers });
   if (!res.ok) {
     const text = await res.text();
-    throw new ApiError(res.status, text || res.statusText);
+    throw new ApiError(res.status, parseApiErrorMessage(text) || res.statusText);
   }
   if (res.status === 204) return undefined as T;
   const contentType = res.headers.get("content-type") ?? "";

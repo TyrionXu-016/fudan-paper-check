@@ -87,6 +87,16 @@ export default function MseProjectDetailPage() {
 
   const pendingRelease = rounds.some((r) => r.review_status === "pending_release");
   const awaitingInnovation = project.status === "awaiting_advisor";
+  const setupMissingReason =
+    !project.advisor_id || !project.student_id
+      ? "项目尚缺成员绑定，请生成邀请链接发送给对方。"
+      : (project.rule_base_ids?.length ?? 0) === 0
+        ? "项目尚未加载论文规范，请先加载默认规范或上传规范文件。"
+        : "";
+  const canStudentSubmit =
+    isStudent &&
+    !setupMissingReason &&
+    (project.status === "active" || project.status === "analyzing");
   const needsMember =
     project.status === "pending_member" ||
     project.status === "draft" ||
@@ -111,10 +121,15 @@ export default function MseProjectDetailPage() {
         backLabel="工作台"
         actions={
           <div className="flex flex-wrap gap-2">
-            {isStudent && (
+            {canStudentSubmit && (
               <Link href={`/mse/projects/${projectId}/submit`} className="btn btn-primary">
                 提交论文
               </Link>
+            )}
+            {isStudent && !canStudentSubmit && (
+              <button type="button" disabled className="btn btn-secondary">
+                提交论文
+              </button>
             )}
             {project.current_round > 0 && (
               <Link
@@ -160,7 +175,7 @@ export default function MseProjectDetailPage() {
 
       {needsMember && (
         <div className="alert alert-warn mb-6">
-          <p>项目尚缺成员绑定，请生成邀请链接发送给对方。</p>
+          <p>{setupMissingReason || "项目尚未准备完成，暂不能提交论文。"}</p>
           <button
             type="button"
             onClick={handleSendInvite}
