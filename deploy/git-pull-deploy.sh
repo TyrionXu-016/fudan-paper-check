@@ -92,7 +92,7 @@ APP_BASE_URL=https://mse.paper.tyrion.space
 REDIS_URL=
 MSE_DATABASE_URL=
 MSE_DB_SCHEMA=fudan_pager
-MSE_ENABLE_RLS=1
+MSE_ENABLE_RLS=0
 PDF_CONVERTER_MODE=docker
 MSE_ALLOW_MOCK_FALLBACK=0
 MINERU_IMAGE=fudan-pager-mse-mineru
@@ -119,7 +119,7 @@ EOF
   set_env_default "REDIS_URL" ""
   set_env_default "MSE_DATABASE_URL" ""
   set_env_default "MSE_DB_SCHEMA" "fudan_pager"
-  set_env_default "MSE_ENABLE_RLS" "1"
+  set_env_default "MSE_ENABLE_RLS" "0"
   set_env_value "PDF_CONVERTER_MODE" "docker"
   set_env_value "MSE_ALLOW_MOCK_FALLBACK" "0"
   set_env_default "MINERU_IMAGE" "fudan-pager-mse-mineru"

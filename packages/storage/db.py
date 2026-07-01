@@ -89,7 +89,7 @@ def init_db() -> None:
             with _engine.begin() as conn:
                 conn.execute(text(f'CREATE SCHEMA IF NOT EXISTS "{schema}"'))
         Base.metadata.create_all(bind=_engine)
-        if _is_postgres_url(url) and os.getenv("MSE_ENABLE_RLS", "1") != "0":
+        if _is_postgres_url(url) and os.getenv("MSE_ENABLE_RLS", "0") == "1":
             with _engine.begin() as conn:
                 for table in Base.metadata.sorted_tables:
                     schema_prefix = f'"{table.schema}".' if table.schema else ""

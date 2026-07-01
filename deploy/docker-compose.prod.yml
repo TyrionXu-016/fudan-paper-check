@@ -18,7 +18,7 @@ services:
       CORS_ORIGINS: ${CORS_ORIGINS:-*}
       MSE_DATABASE_URL: ${MSE_DATABASE_URL:?Set MSE_DATABASE_URL to the Supabase Postgres connection string}
       MSE_DB_SCHEMA: ${MSE_DB_SCHEMA:-fudan_pager}
-      MSE_ENABLE_RLS: ${MSE_ENABLE_RLS:-1}
+      MSE_ENABLE_RLS: ${MSE_ENABLE_RLS:-0}
       APP_BASE_URL: ${APP_BASE_URL:-http://localhost:3000}
       PDF_CONVERTER_MODE: ${PDF_CONVERTER_MODE:-docker}
       MSE_ALLOW_MOCK_FALLBACK: ${MSE_ALLOW_MOCK_FALLBACK:-0}
@@ -78,7 +78,7 @@ services:
       REDIS_URL: ${REDIS_URL:?Set REDIS_URL to the managed Redis connection string}
       MSE_DATABASE_URL: ${MSE_DATABASE_URL:?Set MSE_DATABASE_URL to the Supabase Postgres connection string}
       MSE_DB_SCHEMA: ${MSE_DB_SCHEMA:-fudan_pager}
-      MSE_ENABLE_RLS: ${MSE_ENABLE_RLS:-1}
+      MSE_ENABLE_RLS: ${MSE_ENABLE_RLS:-0}
       APP_BASE_URL: ${APP_BASE_URL:-http://localhost:3000}
       PDF_CONVERTER_MODE: ${PDF_CONVERTER_MODE:-docker}
       MSE_ALLOW_MOCK_FALLBACK: ${MSE_ALLOW_MOCK_FALLBACK:-0}
