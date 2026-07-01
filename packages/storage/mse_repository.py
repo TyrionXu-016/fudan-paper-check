@@ -168,6 +168,7 @@ class MseRepository:
             updated_at=ts,
         )
         self.session.add(row)
+        self.session.flush()
         self.log_activity(project_id, initiator.id, "project_created", f"创建项目「{title}」")
         self.session.commit()
         return _project_from_orm(row)
