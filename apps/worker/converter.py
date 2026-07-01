@@ -41,6 +41,9 @@ class PDFConverter:
         cache_dir = os.getenv("MINERU_CACHE_DIR", "").strip()
         self.mineru_cache_dir = Path(cache_dir) if cache_dir else None
         self.mineru_cache_volume = os.getenv("MINERU_CACHE_VOLUME", "fudan-pager-mineru-cache")
+        self.container_data_root = Path(os.getenv("DOCKER_CONTAINER_DATA_ROOT", "/app/data")).resolve()
+        host_data_root = os.getenv("DOCKER_HOST_DATA_ROOT", "").strip()
+        self.host_data_root = Path(host_data_root).resolve() if host_data_root else None
 
     def convert(self, pdf_path: Path, out_dir: Path) -> tuple[Path, Path | None]:
         out_dir.mkdir(parents=True, exist_ok=True)
@@ -83,6 +86,8 @@ class PDFConverter:
     ) -> None:
         pdf_abs = pdf_path.resolve()
         out_abs = out_dir.resolve()
+        pdf_mount = self._host_mount_path(pdf_abs.parent)
+        out_mount = self._host_mount_path(out_abs)
         if self.mineru_cache_dir is not None:
             self.mineru_cache_dir.mkdir(parents=True, exist_ok=True)
             cache_mount = f"{self.mineru_cache_dir.resolve()}:/root/.cache"
@@ -116,9 +121,9 @@ class PDFConverter:
                 "run",
                 "--rm",
                 "-v",
-                f"{pdf_abs.parent}:/input:ro",
+                f"{pdf_mount}:/input:ro",
                 "-v",
-                f"{out_abs}:/output",
+                f"{out_mount}:/output",
                 *maker_env_args,
                 self.maker_image,
                 f"/input/{pdf_abs.name}",
@@ -126,9 +131,9 @@ class PDFConverter:
             ], self.maker_timeout),
             (mineru_docker_prefix + [
                 "-v",
-                f"{pdf_abs.parent}:/input:ro",
+                f"{pdf_mount}:/input:ro",
                 "-v",
-                f"{out_abs}:/output",
+                f"{out_mount}:/output",
                 "-v",
                 cache_mount,
                 *mineru_env_args,
@@ -156,6 +161,15 @@ class PDFConverter:
             else:
                 detail = "; ".join(errors) if errors else "maker output missing"
                 raise RuntimeError(f"PDF docker conversion failed: {detail}")
+
+    def _host_mount_path(self, path: Path) -> Path:
+        if self.host_data_root is None:
+            return path
+        try:
+            relative = path.resolve().relative_to(self.container_data_root)
+        except ValueError:
+            return path
+        return self.host_data_root / relative
 
     @staticmethod
     def _mock_convert(pdf_path: Path, maker_out: Path, mineru_out: Path) -> None:
