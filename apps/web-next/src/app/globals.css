@@ -227,8 +227,19 @@ a {
     background: color-mix(in srgb, var(--color-ink) 5%, transparent);
   }
 
-  .nav-link--active {
+  .nav-link.nav-link--active {
     background: var(--color-ink);
+    color: var(--color-paper-elevated) !important;
+  }
+
+  .nav-link.nav-link--active:hover,
+  .nav-link.nav-link--active:focus-visible {
+    background: var(--color-ink);
+    color: var(--color-paper-elevated) !important;
+  }
+
+  .nav-link.nav-link--active::selection {
+    background: color-mix(in srgb, var(--color-vermillion) 42%, var(--color-ink));
     color: var(--color-paper-elevated);
   }
 
