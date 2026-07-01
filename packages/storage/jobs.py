@@ -29,14 +29,12 @@ class JobStore:
         )
 
     def get(self, job_id: str) -> JobRecord | None:
-        if job_id in self.jobs:
-            return self.jobs[job_id]
         path = STORAGE / f"{job_id}.json"
         if path.exists():
             record = JobRecord.model_validate_json(path.read_text(encoding="utf-8"))
             self.jobs[job_id] = record
             return record
-        return None
+        return self.jobs.get(job_id)
 
     def list_all(self) -> list[JobRecord]:
         STORAGE.mkdir(parents=True, exist_ok=True)
@@ -44,8 +42,7 @@ class JobStore:
             if path.name.endswith(".report.md"):
                 continue
             job_id = path.stem
-            if job_id not in self.jobs:
-                self.get(job_id)
+            self.get(job_id)
         records = list(self.jobs.values())
         records.sort(key=lambda r: r.created_at or "", reverse=True)
         return records
