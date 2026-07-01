@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { AppShell } from "@/components/ui/AppShell";
+import { AppShell, LoadingScreen } from "@/components/ui/AppShell";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
@@ -12,11 +12,16 @@ const ACCEPT = ".pdf,.jpg,.jpeg,.png,.tiff,.webp,.zip";
 export default function MseSubmitPage() {
   const params = useParams();
   const projectId = params.id as string;
-  const { token } = useAuth();
+  const { user, token, loading: authLoading } = useAuth();
   const router = useRouter();
   const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (authLoading) return;
+    if (!token) router.replace("/login");
+  }, [authLoading, token, router]);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -31,6 +36,10 @@ export default function MseSubmitPage() {
     } finally {
       setLoading(false);
     }
+  }
+
+  if (authLoading || !user) {
+    return <LoadingScreen />;
   }
 
   return (

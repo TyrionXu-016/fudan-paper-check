@@ -1,14 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { AppShell } from "@/components/ui/AppShell";
+import { AppShell, LoadingScreen } from "@/components/ui/AppShell";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 
 export default function NewMseProjectPage() {
-  const { user, token } = useAuth();
+  const { user, token, loading: authLoading } = useAuth();
   const router = useRouter();
   const isAdvisor = (user?.role ?? "advisor") === "advisor";
   const [title, setTitle] = useState("");
@@ -16,6 +16,11 @@ export default function NewMseProjectPage() {
   const [autoNotify, setAutoNotify] = useState(true);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (authLoading) return;
+    if (!token) router.replace("/login");
+  }, [authLoading, token, router]);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -33,6 +38,10 @@ export default function NewMseProjectPage() {
     } finally {
       setLoading(false);
     }
+  }
+
+  if (authLoading || !user) {
+    return <LoadingScreen />;
   }
 
   return (
