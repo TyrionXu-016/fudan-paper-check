@@ -89,15 +89,36 @@ async def create_check_job(
     allowed_suffixes: set[str] | None = None,
 ) -> JobRecord:
     allowed = allowed_suffixes or CHECK_ALLOWED_SUFFIXES
+    filename = file.filename or "upload"
+    content = await file.read()
+    return await create_check_job_from_bytes(
+        background_tasks,
+        user_id=user_id,
+        filename=filename,
+        content=content,
+        rule_base_id=rule_base_id,
+        mineru_file=mineru_file,
+        allowed_suffixes=allowed,
+    )
+
+
+async def create_check_job_from_bytes(
+    background_tasks: BackgroundTasks,
+    *,
+    user_id: str,
+    filename: str,
+    content: bytes,
+    rule_base_id: str = "generic",
+    mineru_file: UploadFile | None = None,
+    allowed_suffixes: set[str] | None = None,
+) -> JobRecord:
+    allowed = allowed_suffixes or CHECK_ALLOWED_SUFFIXES
     validate_rule_base(rule_base_id)
+    validate_upload_file(filename, content, allowed_suffixes=allowed)
 
     job_id = str(uuid.uuid4())
     job_dir = UPLOADS / job_id
     job_dir.mkdir(parents=True, exist_ok=True)
-
-    filename = file.filename or "upload"
-    content = await file.read()
-    validate_upload_file(filename, content, allowed_suffixes=allowed)
 
     dest = job_dir / filename
     dest.write_bytes(content)

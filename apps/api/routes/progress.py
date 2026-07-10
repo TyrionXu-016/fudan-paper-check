@@ -3,17 +3,18 @@ from __future__ import annotations
 import asyncio
 from typing import AsyncIterator
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi.security import HTTPAuthorizationCredentials
 from fastapi.responses import StreamingResponse
 
-from auth.service import assert_job_owner, get_current_user
+from auth.service import assert_job_owner, decode_token, get_current_user, security
 from orchestrator.progress import format_sse, iter_redis_events, subscribe, unsubscribe
 from schema.api_response import ERROR_TASK_NOT_FOUND, ApiError, ApiResponse
 from schema.models import DetectStage, JobStatus, ProgressEvent
 from storage.jobs import job_store
-from storage.users import User
+from storage.users import User, user_store
 
-router = APIRouter(prefix="/v1/detect/progress", tags=["progress"])
+router = APIRouter(prefix="/v1", tags=["progress"])
 
 
 def _current_event(record) -> dict:
@@ -25,10 +26,24 @@ def _current_event(record) -> dict:
     ).model_dump(mode="json")
 
 
-@router.get("/{task_id}")
+async def get_progress_user(
+    token: str | None = Query(None),
+    credentials: HTTPAuthorizationCredentials | None = Depends(security),
+) -> User:
+    if token:
+        user_id = decode_token(token)
+        user = user_store.get(user_id)
+        if not user:
+            raise HTTPException(status.HTTP_401_UNAUTHORIZED, "user not found")
+        return user
+    return await get_current_user(credentials)
+
+
+@router.get("/detect/progress/{task_id}")
+@router.get("/tasks/{task_id}/progress")
 async def stream_progress(
     task_id: str,
-    user: User = Depends(get_current_user),
+    user: User = Depends(get_progress_user),
 ):
     record = job_store.get(task_id)
     if not record:
