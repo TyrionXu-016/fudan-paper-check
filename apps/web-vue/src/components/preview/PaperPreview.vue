@@ -63,6 +63,23 @@ function onInput() {
   }, 450)
 }
 
+function escapeSelectorValue(value: string) {
+  return typeof CSS !== 'undefined' && CSS.escape ? CSS.escape(value) : value.replace(/"/g, '\\"')
+}
+
+function scrollActiveIssueIntoView(issueId: string | null) {
+  if (!issueId || ui.editMode) return
+  const issue = issues.issues.find((item) => item.id === issueId)
+  if (!issue?.spanId) return
+  const rawSpanId = issue.spanId
+  nextTick(() => {
+    const spanId = escapeSelectorValue(rawSpanId)
+    document
+      .querySelector(`[data-span-id="${spanId}"]`)
+      ?.scrollIntoView({ block: 'center', behavior: 'smooth' })
+  })
+}
+
 // 进入编辑器：构建/恢复内容并写入 DOM
 watch(
   () => ui.editMode,
@@ -83,6 +100,11 @@ watch(
   () => {
     if (ui.editMode) nextTick(syncBodyFromStore)
   },
+)
+
+watch(
+  () => issues.activeIssueId,
+  (issueId) => scrollActiveIssueIntoView(issueId),
 )
 
 onMounted(() => {

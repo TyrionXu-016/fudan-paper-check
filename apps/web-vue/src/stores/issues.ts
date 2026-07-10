@@ -118,8 +118,9 @@ export const useIssuesStore = defineStore('issues', () => {
 
   function decide(issueId: string, action: DecisionAction, customContent?: string) {
     const ui = useUiStore()
+    const nextPending = findNextPendingAfter(issueId)
     applyDecision(issueId, action, customContent)
-    activeIssueId.value = issueId
+    activeIssueId.value = nextPending?.id ?? issueId
     const issue = issues.value.find((i) => i.id === issueId)
     if (!issue) return
     if (action === 'accept') ui.toast(`已接受：${issue.summary}`, 'success')
@@ -211,6 +212,16 @@ export const useIssuesStore = defineStore('issues', () => {
     if (next) activeIssueId.value = next.id
   }
 
+  function findNextPendingAfter(issueId: string) {
+    const idx = issues.value.findIndex((i) => i.id === issueId)
+    if (idx < 0) return firstPending.value
+    return (
+      issues.value.slice(idx + 1).find((i) => !decisions[i.id]) ??
+      issues.value.slice(0, idx).find((i) => !decisions[i.id]) ??
+      null
+    )
+  }
+
   function setActive(id: string | null) {
     activeIssueId.value = id
   }
@@ -267,6 +278,7 @@ export const useIssuesStore = defineStore('issues', () => {
     undo,
     redo,
     navigate,
+    findNextPendingAfter,
     setActive,
     setBackendTask,
     reset,
