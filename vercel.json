@@ -1,0 +1,13 @@
+{
+  "version": 2,
+  "framework": "vite",
+  "installCommand": "cd apps/web-vue && npm ci",
+  "buildCommand": "cd apps/web-vue && npm run build",
+  "outputDirectory": "apps/web-vue/dist",
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}
