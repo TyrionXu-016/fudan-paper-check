@@ -13,11 +13,14 @@ const open = ref(false)
 const rule = computed(() => task.rules.find((r) => r.id === task.ruleId) ?? task.rules[0])
 
 function choose(id: string) {
-  task.setRule(id)
   open.value = false
-  if (task.taskState === 'done' && issues.decidedCount > 0) {
-    ui.toast('切换规范将清除当前修改')
+  if (id === task.ruleId) return
+  if (task.taskState === 'done' || issues.decidedCount > 0) {
+    ui.pendingRuleId = id
+    ui.showRuleSwitchConfirm = true
+    return
   }
+  task.setRule(id)
 }
 </script>
 
@@ -26,8 +29,8 @@ function choose(id: string) {
     <div style="position: relative">
       <div class="rule-select" @click="open = !open">
         <div class="rule-icon"><AppIcon name="book" :size="14" /></div>
-        <div class="rule-name">{{ rule.name }}</div>
-        <span style="font-size: 11px; color: var(--ink-4)">{{ rule.version }}</span>
+        <div class="rule-name">{{ rule?.name ?? '暂无规范' }}</div>
+        <span style="font-size: 11px; color: var(--ink-4)">{{ rule?.version }}</span>
         <AppIcon name="chevD" :size="14" class="chev" />
       </div>
       <div
@@ -63,3 +66,4 @@ function choose(id: string) {
     </button>
   </div>
 </template>
+

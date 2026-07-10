@@ -56,14 +56,50 @@ export function useShortcut() {
     }
 
     const k = e.key.toLowerCase()
+    if ((e.ctrlKey || e.metaKey) && k === 'f') {
+      e.preventDefault()
+      ;(document.querySelector('.search input') as HTMLInputElement | null)?.focus()
+      return
+    }
+    if ((e.ctrlKey || e.metaKey) && (e.key === '+' || e.key === '=')) {
+      e.preventDefault()
+      ui.setZoom(ui.zoom + 10)
+      return
+    }
+    if ((e.ctrlKey || e.metaKey) && e.key === '-') {
+      e.preventDefault()
+      ui.setZoom(ui.zoom - 10)
+      return
+    }
+    if ((e.ctrlKey || e.metaKey) && k === 's') {
+      e.preventDefault()
+      ui.exportDialog = 'word'
+      return
+    }
     if (k === 'z' && (e.ctrlKey || e.metaKey)) {
       e.preventDefault()
       if (e.shiftKey) issues.redo()
       else issues.undo()
       return
     }
+    if (k === 'y' && (e.ctrlKey || e.metaKey)) {
+      e.preventDefault()
+      issues.redo()
+      return
+    }
 
     const active = issues.activeIssueId
+    const activeIssue = active ? issues.issues.find((i) => i.id === active) : null
+    if ((e.ctrlKey || e.metaKey) && k === 'a' && activeIssue) {
+      e.preventDefault()
+      issues.batchAccept(activeIssue.type)
+      return
+    }
+    if ((e.ctrlKey || e.metaKey) && k === 'r' && activeIssue) {
+      e.preventDefault()
+      issues.batchReject(activeIssue.type)
+      return
+    }
     if (!active) return
     if (k === 'a' && !e.ctrlKey && !e.metaKey) {
       e.preventDefault()

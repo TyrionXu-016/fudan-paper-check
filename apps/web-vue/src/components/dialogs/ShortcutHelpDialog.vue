@@ -12,6 +12,7 @@ const SHORTCUTS: { k: string[]; label: string }[] = [
   { k: ['↓'], label: '下一个问题' },
   { k: ['Ctrl', 'Z'], label: '撤销 (最近 20 步)' },
   { k: ['Ctrl', 'Shift', 'Z'], label: '重做' },
+  { k: ['Ctrl', 'Y'], label: '重做' },
   { k: ['Ctrl', 'A'], label: '全部接受当前分类' },
   { k: ['Ctrl', 'R'], label: '全部拒绝当前分类' },
   { k: ['Ctrl', 'F'], label: '聚焦搜索框' },

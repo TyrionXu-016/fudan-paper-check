@@ -4,6 +4,14 @@ import { isSpanNode, type Paragraph } from '../types'
 import { useVersionStore } from './version'
 import { useDocStore } from './doc'
 
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+}
+
 // 页面级排版设置（方案终期：行间距 / 页眉页脚 / 页边距 / 字体字号）
 export interface DocSettings {
   marginV: number // 上下页边距 cm
@@ -47,20 +55,22 @@ export const useEditorStore = defineStore('editor', () => {
     const paper = useDocStore().currentPaper
     const resolve = (p: Paragraph) =>
       p
-        .map((n) =>
-          isSpanNode(n) ? (n.issueId ? version.current(n.spanId) ?? n.original : n.original) : n,
-        )
+        .map((n) => {
+          if (!isSpanNode(n)) return escapeHtml(n)
+          const current = version.current(n.spanId) ?? n.original
+          return `<span data-span-id="${escapeHtml(n.spanId)}" data-issue-id="${escapeHtml(n.issueId ?? '')}">${current}</span>`
+        })
         .join('')
 
     const parts: string[] = []
-    parts.push(`<h1>${paper.title}</h1>`)
-    if (paper.author) parts.push(`<p class="author">${paper.author}</p>`)
+    parts.push(`<h1>${escapeHtml(paper.title)}</h1>`)
+    if (paper.author) parts.push(`<p class="author">${escapeHtml(paper.author)}</p>`)
     if (paper.abstract.length) {
       parts.push(`<p class="label">摘　要</p>`)
       paper.abstract.forEach((p) => parts.push(`<p>${resolve(p)}</p>`))
     }
     paper.sections.forEach((s) => {
-      parts.push(`<h2>${s.heading}</h2>`)
+      parts.push(`<h2>${escapeHtml(s.heading)}</h2>`)
       s.paragraphs.forEach((p) => parts.push(`<p>${resolve(p)}</p>`))
     })
     return parts.join('')

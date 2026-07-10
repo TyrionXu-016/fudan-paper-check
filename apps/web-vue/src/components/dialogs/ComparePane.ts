@@ -3,6 +3,7 @@ import type { Paragraph } from '../../types'
 import { isSpanNode } from '../../types'
 import { useIssuesStore } from '../../stores/issues'
 import { useDocStore } from '../../stores/doc'
+import { useVersionStore } from '../../stores/version'
 
 interface Props {
   mode: 'original' | 'modified'
@@ -12,6 +13,7 @@ interface Props {
 // 对比弹窗单栏：原文 / 修改后，按当前差异序号高亮聚焦
 const ComparePane: FunctionalComponent<Props> = (props) => {
   const issues = useIssuesStore()
+  const version = useVersionStore()
   const paper = useDocStore().currentPaper
   let count = -1
 
@@ -25,10 +27,10 @@ const ComparePane: FunctionalComponent<Props> = (props) => {
       let cls = ''
       if (props.mode === 'modified') {
         if (accepted) {
-          text = n.suggested
+          text = version.current(n.spanId) ?? n.suggested
           cls = 'hl hl-accepted'
         } else if (custom) {
-          text = d?.customContent ?? n.original
+          text = version.current(n.spanId) ?? d?.customContent ?? n.original
           cls = 'hl hl-custom'
         }
       }

@@ -37,6 +37,8 @@ export const useUiStore = defineStore('ui', () => {
   const showShortcuts = ref(false)
   const exportDialog = ref<'word' | 'pdf' | null>(null)
   const showResetConfirm = ref(false)
+  const showRuleSwitchConfirm = ref(false)
+  const pendingRuleId = ref<string | null>(null)
 
   function closeAllModals() {
     historyDialog.value = null
@@ -45,6 +47,8 @@ export const useUiStore = defineStore('ui', () => {
     showShortcuts.value = false
     exportDialog.value = null
     showResetConfirm.value = false
+    showRuleSwitchConfirm.value = false
+    pendingRuleId.value = null
   }
 
   const anyModalOpen = () =>
@@ -53,7 +57,8 @@ export const useUiStore = defineStore('ui', () => {
     showCompare.value ||
     showShortcuts.value ||
     !!exportDialog.value ||
-    showResetConfirm.value
+    showResetConfirm.value ||
+    showRuleSwitchConfirm.value
 
   return {
     toasts,
@@ -67,7 +72,11 @@ export const useUiStore = defineStore('ui', () => {
     showShortcuts,
     exportDialog,
     showResetConfirm,
+    showRuleSwitchConfirm,
+    pendingRuleId,
     closeAllModals,
     anyModalOpen,
   }
 })
+
+

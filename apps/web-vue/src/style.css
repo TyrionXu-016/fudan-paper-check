@@ -1431,3 +1431,24 @@ input, textarea, select { font-family: inherit; }
   box-shadow: var(--shadow-sm);
   font-weight: 600;
 }
+.detect-pill.error {
+  background: #fef2f2;
+  border-color: #fecaca;
+  color: #b91c1c;
+}
+.detect-pill.error .stage-dot {
+  background: #ef4444;
+  box-shadow: 0 0 0 3px rgba(239,68,68,0.16);
+  animation: none;
+}
+.inline-retry {
+  height: 22px;
+  padding: 0 8px;
+  border-radius: 999px;
+  border: 1px solid #fecaca;
+  background: #fff;
+  color: #b91c1c;
+  font-size: 12px;
+  cursor: pointer;
+}
+.inline-retry:hover { background: #fff5f5; }

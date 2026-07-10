@@ -1,7 +1,9 @@
 import { defineStore } from 'pinia'
 import { computed, reactive, ref } from 'vue'
 import type { Decision, DecisionAction, Issue, IssueTypeKey } from '../types'
-import { GROUP_ORDER, ISSUES, SPAN_INDEX } from '../data/paper'
+import { GROUP_ORDER, SPAN_INDEX } from '../data/paper'
+import { patchDecision, type BackendDecisionAction } from '../api/decisionApi'
+import { USE_MOCK } from '../api/env'
 import { useVersionStore } from './version'
 import { useUiStore } from './ui'
 
@@ -12,9 +14,10 @@ interface UndoCmd {
 }
 
 export const useIssuesStore = defineStore('issues', () => {
-  const issues = ref<Issue[]>(ISSUES)
+  const issues = ref<Issue[]>([])
   const decisions = reactive<Record<string, Decision>>({})
   const activeIssueId = ref<string | null>(null)
+  const backendTaskId = ref<string | null>(null)
   const searchQuery = ref('')
   const filterType = ref<'ALL' | IssueTypeKey>('ALL')
 
@@ -64,6 +67,13 @@ export const useIssuesStore = defineStore('issues', () => {
 
   const firstPending = computed(() => issues.value.find((i) => !decisions[i.id]) ?? null)
 
+  function syncDecision(issueId: string, action: BackendDecisionAction, customContent?: string) {
+    if (USE_MOCK || !backendTaskId.value) return
+    patchDecision(backendTaskId.value, issueId, action, customContent).catch((e) => {
+      useUiStore().toast(e instanceof Error ? `决策同步失败：${e.message}` : '决策同步失败')
+    })
+  }
+
   // ---------- core decision logic ----------
   function applyDecision(
     issueId: string,
@@ -83,7 +93,7 @@ export const useIssuesStore = defineStore('issues', () => {
 
     if (spanId && (action === 'accept' || action === 'custom')) {
       const node = SPAN_INDEX[spanId]
-      const newContent = action === 'accept' ? node?.suggested ?? issue.after : customContent ?? ''
+      const newContent = action === 'accept' ? issue.after || node?.suggested || '' : customContent ?? ''
       const source = manual ? 'manual' : action === 'accept' ? 'ai' : 'custom'
       const note = manual ? '手动编辑' : action === 'accept' ? `AI 建议：${issue.summary}` : '用户自定义修改'
       version.push(spanId, newContent, source, note)
@@ -96,12 +106,14 @@ export const useIssuesStore = defineStore('issues', () => {
           if (prevDecision) decisions[issueId] = prevDecision
           else delete decisions[issueId]
           if (spanId && prevVersions) version.setHistory(spanId, prevVersions)
+          syncDecision(issueId, prevDecision?.action ?? 'pending', prevDecision?.customContent)
         },
         redo: () => applyDecision(issueId, action, customContent),
       }
       undoStack.value = [...undoStack.value.slice(-19), cmd]
       redoStack.value = []
     }
+    syncDecision(issueId, action, customContent)
   }
 
   function decide(issueId: string, action: DecisionAction, customContent?: string) {
@@ -115,12 +127,19 @@ export const useIssuesStore = defineStore('issues', () => {
   }
 
   // 手动编辑：把预览区某个 span 的新内容（可含 <b>/<i>/<u> 等格式）写入版本历史
-  function applyManualEdit(spanId: string, html: string) {
+  function normalizeHtml(html: string) {
+    return html
+      .replace(/\sdata-[a-z-]+="[^"]*"/g, '')
+      .replace(/\s+/g, ' ')
+      .trim()
+  }
+
+  function applyManualEdit(spanId: string, html: string, notify = true): boolean {
     const version = useVersionStore()
     const ui = useUiStore()
     const plain = html.replace(/<[^>]+>/g, '').trim()
-    if (!plain) return // 不接受清空
-    if (html === version.current(spanId)) return // 无变化
+    if (!plain) return false // 不接受清空
+    if (normalizeHtml(html) === normalizeHtml(version.current(spanId) ?? '')) return false // 无变化
     const issue = issues.value.find((i) => i.spanId === spanId)
     if (issue) {
       applyDecision(issue.id, 'custom', html, true, true)
@@ -128,7 +147,17 @@ export const useIssuesStore = defineStore('issues', () => {
     } else {
       version.push(spanId, html, 'manual', '手动编辑')
     }
-    ui.toast('已记录手动编辑', 'success')
+    if (notify) ui.toast('已记录手动编辑', 'success')
+    return true
+  }
+
+  function applyManualEdits(edits: Array<{ spanId: string; html: string }>) {
+    let changed = 0
+    for (const edit of edits) {
+      if (applyManualEdit(edit.spanId, edit.html, false)) changed += 1
+    }
+    if (changed > 0) useUiStore().toast(`已同步 ${changed} 处手动编辑`, 'success')
+    return changed
   }
 
   function undoIssue(issueId: string) {
@@ -137,6 +166,7 @@ export const useIssuesStore = defineStore('issues', () => {
     if (!decisions[issueId]) return
     const issue = issues.value.find((i) => i.id === issueId)
     delete decisions[issueId]
+    syncDecision(issueId, 'pending')
     if (issue?.spanId) version.popLast(issue.spanId)
     if (issue) ui.toast(`已撤销：${issue.summary}`)
   }
@@ -185,11 +215,17 @@ export const useIssuesStore = defineStore('issues', () => {
     activeIssueId.value = id
   }
 
+  function setBackendTask(id: string | null) {
+    backendTaskId.value = id
+  }
+
   function reset() {
+    issues.value = []
     for (const k of Object.keys(decisions)) delete decisions[k]
     undoStack.value = []
     redoStack.value = []
     activeIssueId.value = null
+    backendTaskId.value = null
   }
 
   // 真后端返回后用真实问题列表替换；清掉之前的决策/撤销栈/聚焦/过滤
@@ -207,6 +243,7 @@ export const useIssuesStore = defineStore('issues', () => {
     issues,
     decisions,
     activeIssueId,
+    backendTaskId,
     searchQuery,
     filterType,
     undoStack,
@@ -223,6 +260,7 @@ export const useIssuesStore = defineStore('issues', () => {
     firstPending,
     decide,
     applyManualEdit,
+    applyManualEdits,
     undoIssue,
     batchAccept,
     batchReject,
@@ -230,6 +268,7 @@ export const useIssuesStore = defineStore('issues', () => {
     redo,
     navigate,
     setActive,
+    setBackendTask,
     reset,
     setIssues,
   }

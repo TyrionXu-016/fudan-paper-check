@@ -9,3 +9,7 @@ export const AUTH_REQUIRED = !USE_MOCK
 
 export const TOKEN_STORAGE_KEY = 'fpc_token'
 export const UNAUTHORIZED_EVENT = 'fpc:unauthorized'
+export const CHUNK_UPLOAD_THRESHOLD = Number(import.meta.env.VITE_CHUNK_UPLOAD_THRESHOLD ?? 10 * 1024 * 1024)
+export const CHUNK_SIZE = Number(import.meta.env.VITE_CHUNK_SIZE ?? 2 * 1024 * 1024)
+export const ENABLE_SSE_PROGRESS = (import.meta.env.VITE_ENABLE_SSE_PROGRESS ?? 'true').toString().toLowerCase() !== 'false'
+export const MAX_PROGRESS_RETRIES = Number(import.meta.env.VITE_MAX_PROGRESS_RETRIES ?? 5)

@@ -3,12 +3,14 @@ import type { Paragraph } from '../../types'
 import { isSpanNode } from '../../types'
 import { useIssuesStore } from '../../stores/issues'
 import { useUiStore } from '../../stores/ui'
+import { useVersionStore } from '../../stores/version'
 
 // 渲染单个段落的内联内容：纯文本片段 + 可交互高亮 span。
 // 用函数式组件以精确控制内联节点，避免模板空白把中文撑开。
 const ParaContent: FunctionalComponent<{ para: Paragraph }> = (props) => {
   const issues = useIssuesStore()
   const ui = useUiStore()
+  const version = useVersionStore()
   const editable = ui.editMode
 
   const out: (string | VNode)[] = props.para.map((node, i) => {
@@ -21,10 +23,10 @@ const ParaContent: FunctionalComponent<{ para: Paragraph }> = (props) => {
     let cls = 'hl hl-pending'
     let asHtml = false // custom/manual 内容可能含格式标签，用 innerHTML 渲染
     if (decision?.action === 'accept') {
-      text = suggested
+      text = version.current(spanId) ?? suggested
       cls = 'hl hl-accepted'
     } else if (decision?.action === 'custom') {
-      text = decision.customContent ?? original
+      text = version.current(spanId) ?? decision.customContent ?? original
       cls = 'hl hl-custom'
       asHtml = true
     } else if (decision?.action === 'reject') {

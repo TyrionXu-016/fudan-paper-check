@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import AppIcon from '../AppIcon.vue'
 import ComparePane from './ComparePane'
 import { isSpanNode } from '../../types'
@@ -12,6 +12,8 @@ const issues = useIssuesStore()
 const ui = useUiStore()
 const doc = useDocStore()
 const diffIdx = ref(0)
+const originalPane = ref<HTMLElement | null>(null)
+const modifiedPane = ref<HTMLElement | null>(null)
 
 const total = computed(() => {
   let n = 0
@@ -28,6 +30,17 @@ const total = computed(() => {
   paper.sections.forEach((s) => s.paragraphs.forEach(walk))
   return n
 })
+
+function scrollFocusedIntoView() {
+  nextTick(() => {
+    for (const pane of [originalPane.value, modifiedPane.value]) {
+      const target = pane?.querySelector('.focused')
+      target?.scrollIntoView({ block: 'center', behavior: 'smooth' })
+    }
+  })
+}
+
+watch(diffIdx, scrollFocusedIntoView)
 </script>
 
 <template>
@@ -60,11 +73,11 @@ const total = computed(() => {
       <div class="compare-body">
         <div class="compare-pane">
           <div class="compare-pane-head">原始论文</div>
-          <div class="compare-pane-body"><ComparePane mode="original" :focus-idx="diffIdx" /></div>
+          <div ref="originalPane" class="compare-pane-body"><ComparePane mode="original" :focus-idx="diffIdx" /></div>
         </div>
         <div class="compare-pane">
           <div class="compare-pane-head">修改后论文</div>
-          <div class="compare-pane-body"><ComparePane mode="modified" :focus-idx="diffIdx" /></div>
+          <div ref="modifiedPane" class="compare-pane-body"><ComparePane mode="modified" :focus-idx="diffIdx" /></div>
         </div>
       </div>
     </div>

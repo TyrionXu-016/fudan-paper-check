@@ -6,10 +6,12 @@ import EditorToolbar from './EditorToolbar.vue'
 import { useUiStore } from '../../stores/ui'
 import { useEditorStore } from '../../stores/editor'
 import { useDocStore } from '../../stores/doc'
+import { useIssuesStore } from '../../stores/issues'
 
 const ui = useUiStore()
 const editor = useEditorStore()
 const doc = useDocStore()
+const issues = useIssuesStore()
 // 真后端加载后 doc.currentPaper 是真实论文，否则回落到 mock PAPER
 const paper = computed(() => doc.currentPaper)
 
@@ -34,6 +36,26 @@ function syncBodyFromStore() {
 }
 
 let debounce: ReturnType<typeof setTimeout> | null = null
+function commitNow() {
+  if (!bodyEl.value) return
+  if (debounce) {
+    clearTimeout(debounce)
+    debounce = null
+  }
+  editor.commitHtml(bodyEl.value.innerHTML)
+}
+
+function syncSpanEditsFromDom() {
+  if (!bodyEl.value) return
+  const edits = Array.from(bodyEl.value.querySelectorAll<HTMLElement>('[data-span-id]'))
+    .map((el) => ({
+      spanId: el.dataset.spanId || '',
+      html: el.innerHTML,
+    }))
+    .filter((edit) => edit.spanId)
+  issues.applyManualEdits(edits)
+}
+
 function onInput() {
   if (debounce) clearTimeout(debounce)
   debounce = setTimeout(() => {
@@ -44,10 +66,13 @@ function onInput() {
 // 进入编辑器：构建/恢复内容并写入 DOM
 watch(
   () => ui.editMode,
-  (on) => {
+  (on, wasOn) => {
     if (on) {
       editor.enter()
       nextTick(syncBodyFromStore)
+    } else if (wasOn) {
+      commitNow()
+      syncSpanEditsFromDom()
     }
   },
 )

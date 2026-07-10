@@ -1,23 +1,52 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import ModalShell from './ModalShell.vue'
 import AppIcon from '../AppIcon.vue'
 import { useIssuesStore } from '../../stores/issues'
+import { useTaskStore } from '../../stores/task'
 import { useUiStore } from '../../stores/ui'
+import { useEditorStore } from '../../stores/editor'
+import { USE_MOCK } from '../../api/env'
+import { exportFromBackend, type ExportFormat } from '../../api/exportApi'
+import { getBackendPreview } from '../../api/previewApi'
 import { exportPdf, exportWord } from '../../utils/export'
 
 const issues = useIssuesStore()
+const task = useTaskStore()
 const ui = useUiStore()
+const editor = useEditorStore()
 
 const format = computed(() => (ui.exportDialog === 'word' ? 'Word' : 'PDF'))
 const pending = computed(() => issues.pendingCount)
+const exporting = ref(false)
 
-function confirm() {
+async function confirm() {
+  if (exporting.value) return
+  exporting.value = true
   const isWord = ui.exportDialog === 'word'
-  ui.exportDialog = null
-  if (isWord) exportWord()
-  else exportPdf()
-  ui.toast(`已导出 ${isWord ? 'Word' : 'PDF'}（应用全部修改）`, 'success')
+  const backendFormat: ExportFormat = isWord ? 'docx' : 'pdf'
+  try {
+    if (!USE_MOCK && task.currentTaskId && !editor.dirty) {
+      await exportFromBackend(task.currentTaskId, backendFormat, issues.decisions)
+      getBackendPreview(task.currentTaskId)
+        .then((preview) => {
+          if (preview.unresolved_count !== pending.value) {
+            ui.toast(`后端预览显示仍有 ${preview.unresolved_count} 项未处理`, 'info')
+          }
+        })
+        .catch(() => undefined)
+    } else if (isWord) {
+      exportWord()
+    } else {
+      await exportPdf()
+    }
+    ui.exportDialog = null
+    ui.toast(`已导出${isWord ? 'Word' : 'PDF'}（应用全部修改）`, 'success')
+  } catch (e) {
+    ui.toast(e instanceof Error ? e.message : '导出失败')
+  } finally {
+    exporting.value = false
+  }
 }
 </script>
 
@@ -50,10 +79,17 @@ function confirm() {
       </div>
     </div>
 
+    <div
+      v-if="editor.dirty"
+      style="margin-top: 14px; padding: 10px 12px; border-radius: 8px; background: var(--teal-50); color: var(--teal-800); font-size: 12.5px; line-height: 1.6"
+    >
+      已检测到整篇手动编辑内容，本次将使用本地导出以保留当前预览中的修改。
+    </div>
+
     <template #footer>
       <button class="btn" @click="ui.exportDialog = null">取消</button>
-      <button class="btn btn-primary" @click="confirm">
-        <AppIcon name="download" :size="13" /> 确认导出
+      <button class="btn btn-primary" :disabled="exporting" @click="confirm">
+        <AppIcon name="download" :size="13" /> {{ exporting ? '导出中...' : '确认导出' }}
       </button>
     </template>
   </ModalShell>

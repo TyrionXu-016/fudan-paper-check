@@ -5,6 +5,8 @@ import { isSpanNode } from '../types'
 import { nowTs } from '../utils/time'
 import { useDocStore } from './doc'
 
+const MAX_HISTORY_PER_SPAN = 20
+
 function buildFromPaper(paper: Paper): Record<string, ModRecord[]> {
   const v: Record<string, ModRecord[]> = {}
   const walk = (nodes: Paragraph) => {
@@ -29,7 +31,9 @@ export const useVersionStore = defineStore('version', () => {
   )
 
   function push(spanId: string, content: string, source: ModSource, note: string) {
-    versions[spanId] = [...(versions[spanId] || []), { content, source, ts: nowTs(), note }]
+    const next = [...(versions[spanId] || []), { content, source, ts: nowTs(), note }]
+    versions[spanId] =
+      next.length <= MAX_HISTORY_PER_SPAN ? next : [next[0], ...next.slice(-(MAX_HISTORY_PER_SPAN - 1))]
   }
 
   function setHistory(spanId: string, arr: ModRecord[]) {

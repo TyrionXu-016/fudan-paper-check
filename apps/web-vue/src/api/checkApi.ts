@@ -1,7 +1,8 @@
 import axios from 'axios'
 import type { Rule } from '../types'
 import { ISSUES, RULES, STAGES } from '../data/paper'
-import { API_BASE, TOKEN_STORAGE_KEY, UNAUTHORIZED_EVENT, USE_MOCK } from './env'
+import { API_BASE, CHUNK_UPLOAD_THRESHOLD, TOKEN_STORAGE_KEY, UNAUTHORIZED_EVENT, USE_MOCK } from './env'
+import { uploadInChunks } from './chunk'
 import type { BackendCheckReport } from './adapter'
 import type { BackendDocumentView } from './docAdapter'
 
@@ -85,6 +86,13 @@ async function realUploadAndCheck(
   return { taskId: String(r.task_id ?? r.taskId) }
 }
 
+async function realRestartCheck(taskId: string, ruleId: string): Promise<UploadResp> {
+  const form = new FormData()
+  form.append('rule_base_id', ruleId)
+  const r = await http.post<unknown, Record<string, unknown>>(`/v1/tasks/${taskId}/restart`, form)
+  return { taskId: String(r.task_id ?? r.taskId ?? taskId) }
+}
+
 // 进度走 /v1/tasks/{id}（status + progress_percent + current_stage），DONE 后再取一次 /v1/result 拿 issue 数
 async function realGetResult(taskId: string): Promise<ResultResp> {
   const t = await http.get<unknown, Record<string, unknown>>(`/v1/tasks/${taskId}`)
@@ -164,14 +172,30 @@ export function getRuleBases(): Promise<Rule[]> {
   return USE_MOCK ? sleep(150).then(() => RULES) : realGetRuleBases()
 }
 
-export function uploadAndCheck(
+export async function uploadAndCheck(
   file: File,
   ruleId: string,
   onProgress: ProgressCb,
 ): Promise<UploadResp> {
-  return USE_MOCK
-    ? mockUploadAndCheck(file, ruleId, onProgress)
-    : realUploadAndCheck(file, ruleId, onProgress)
+  if (USE_MOCK) return mockUploadAndCheck(file, ruleId, onProgress)
+  if (file.size >= CHUNK_UPLOAD_THRESHOLD) {
+    try {
+      return await uploadInChunks(file, ruleId, onProgress)
+    } catch (e) {
+      // Some deployments may not expose chunk endpoints yet; keep the upload usable.
+      if (e instanceof Error) console.warn('Chunk upload failed, falling back to normal upload:', e.message)
+      onProgress(0)
+    }
+  }
+  return realUploadAndCheck(file, ruleId, onProgress)
+}
+
+export async function restartCheck(taskId: string, ruleId: string): Promise<UploadResp> {
+  if (USE_MOCK) {
+    mockTasks.set(taskId, Date.now())
+    return { taskId }
+  }
+  return realRestartCheck(taskId, ruleId)
 }
 
 export function getResult(taskId: string): Promise<ResultResp> {
@@ -187,3 +211,4 @@ export async function fetchDocument(taskId: string): Promise<BackendDocumentView
     return null
   }
 }
+

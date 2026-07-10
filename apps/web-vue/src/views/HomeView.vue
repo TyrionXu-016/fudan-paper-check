@@ -15,7 +15,7 @@ import ShortcutHelpDialog from '../components/dialogs/ShortcutHelpDialog.vue'
 import ExportDialog from '../components/dialogs/ExportDialog.vue'
 import LoginModal from '../components/dialogs/LoginModal.vue'
 import ModalShell from '../components/dialogs/ModalShell.vue'
-import { RULES, STAGES } from '../data/paper'
+import { STAGES } from '../data/paper'
 import { useTaskStore } from '../stores/task'
 import { useIssuesStore } from '../stores/issues'
 import { useVersionStore } from '../stores/version'
@@ -47,9 +47,9 @@ const stageLabel = computed(
   () => STAGES.find((s) => s.id === task.detectStage)?.label || '检测中',
 )
 
-const acceptPct = computed(() => (issues.acceptedCount / issues.totalIssues) * 100)
-const customPct = computed(() => (issues.customCount / issues.totalIssues) * 100)
-const rejectPct = computed(() => (issues.rejectedCount / issues.totalIssues) * 100)
+const acceptPct = computed(() => (issues.totalIssues ? (issues.acceptedCount / issues.totalIssues) * 100 : 0))
+const customPct = computed(() => (issues.totalIssues ? (issues.customCount / issues.totalIssues) * 100 : 0))
+const rejectPct = computed(() => (issues.totalIssues ? (issues.rejectedCount / issues.totalIssues) * 100 : 0))
 
 function doReset() {
   task.reset()
@@ -60,11 +60,25 @@ function doReset() {
   ui.toast('已重置全部修改')
 }
 
+async function confirmRuleSwitch() {
+  if (!ui.pendingRuleId) return
+  const nextRule = ui.pendingRuleId
+  issues.reset()
+  version.reset()
+  editor.reset()
+  ui.pendingRuleId = null
+  ui.showRuleSwitchConfirm = false
+  ui.toast('已切换规范，正在重新检测', 'success')
+  await task.restartWithRule(nextRule)
+}
+
 const TWEAK_STATES = [
   { v: 'idle', l: '空闲' },
   { v: 'uploading', l: '上传' },
   { v: 'detecting', l: '检测' },
+  { v: 'retrying', l: '重试' },
   { v: 'done', l: '完成' },
+  { v: 'error', l: '错误' },
 ] as const
 </script>
 
@@ -86,10 +100,14 @@ const TWEAK_STATES = [
           <div class="stage-bar"><div class="stage-fill" :style="{ width: task.uploadPct + '%' }" /></div>
           <span class="stage-pct">{{ Math.round(task.uploadPct) }}%</span>
         </div>
-        <div v-else-if="task.taskState === 'detecting'" class="detect-pill">
-          <span class="stage-dot" /><span>{{ stageLabel }}</span>
+        <div v-else-if="task.taskState === 'detecting' || task.taskState === 'retrying'" class="detect-pill">
+          <span class="stage-dot" /><span>{{ task.taskState === 'retrying' ? '重连中：' + stageLabel : stageLabel }}</span>
           <div class="stage-bar"><div class="stage-fill" :style="{ width: task.detectPct + '%' }" /></div>
           <span class="stage-pct">{{ task.detectPct }}%</span>
+        </div>
+        <div v-else-if="task.taskState === 'error'" class="detect-pill error">
+          <span class="stage-dot" /><span>{{ task.lastError || '检测失败' }}</span>
+          <button class="inline-retry" @click="task.retry()">重试</button>
         </div>
         <div v-else class="detect-pill done">
           <span class="stage-dot" /><span>检测完成 · 共 {{ issues.totalIssues }} 项问题</span>
@@ -133,13 +151,13 @@ const TWEAK_STATES = [
         <div class="section">
           <div class="section-head">
             <div class="section-title">检测规范</div>
-            <span style="font-size: 11px; color: var(--ink-4)">{{ RULES.length }} 个可选</span>
+            <span style="font-size: 11px; color: var(--ink-4)">{{ task.rules.length }} 个可选</span>
           </div>
           <RuleSelector />
         </div>
 
         <IssueList v-if="task.taskState === 'done'" />
-        <DetectingPlaceholder v-else-if="task.taskState === 'detecting'" />
+        <DetectingPlaceholder v-else-if="task.taskState === 'detecting' || task.taskState === 'retrying'" />
         <div v-else style="padding: 40px 24px; text-align: center; color: var(--ink-4); font-size: 13px">
           {{ task.taskState === 'idle' ? '上传论文后将在此显示检测出的问题列表' : '上传完成后将自动开始检测…' }}
         </div>
@@ -206,6 +224,21 @@ const TWEAK_STATES = [
 
     <!-- ============ MODALS ============ -->
     <HistoryDialog v-if="ui.historyDialog" />
+    <ModalShell
+      v-if="ui.showRuleSwitchConfirm"
+      title="切换检测规范？"
+      subtitle="切换后会清空当前决策、版本历史，并重新检测当前论文。"
+      :width="440"
+      @close="ui.showRuleSwitchConfirm = false; ui.pendingRuleId = null"
+    >
+      <div style="font-size: 13.5px; line-height: 1.7; color: var(--ink-3)">
+        当前已生成的接受、拒绝、自定义修改和撤销历史会被清空。确认后将使用新规范重新发起检测。
+      </div>
+      <template #footer>
+        <button class="btn" @click="ui.showRuleSwitchConfirm = false; ui.pendingRuleId = null">取消</button>
+        <button class="btn btn-primary" @click="confirmRuleSwitch">确认切换</button>
+      </template>
+    </ModalShell>
     <RulePreviewDialog v-if="ui.showRulePreview" />
     <CompareDialog v-if="ui.showCompare" />
     <ShortcutHelpDialog v-if="ui.showShortcuts" />
